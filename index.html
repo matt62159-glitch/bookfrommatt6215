@@ -198,6 +198,7 @@ details.info li { margin-bottom: 4px; }
               <button class="btn" id="stopBtn" hidden>중지</button>
               <button class="btn ghost" id="addManual">+ 직접 입력</button>
             </div>
+            <div class="notice" id="sampleOff2" hidden></div>
             <div class="status" id="status" hidden></div>
             <div class="notice" id="imageNote" hidden></div>
           </div>
@@ -336,6 +337,7 @@ details.info li { margin-bottom: 4px; }
   }
 
   /* ---------- Claude 이미지 분석 ---------- */
+  // 사진 분석 가능 여부. 미리 확인한 값이 없어도 버튼은 남겨 두고, 실제 호출 결과로 판단합니다.
   async function initSample() {
     let sample = null;
     try { if (window.claude?.use) sample = await claude.use("sample"); } catch { sample = null; }
@@ -344,14 +346,17 @@ details.info li { margin-bottom: 4px; }
       const lim = await sample.limits().catch(() => null);
       S.imgLimits = lim?.images || null;
     }
-    const off = $("#sampleOff");
-    if (!S.sample || !S.imgLimits) {
-      off.hidden = false;
-      off.textContent = S.sample
-        ? "이 화면에서는 Claude가 이미지를 읽을 수 없습니다. claude.ai 웹이나 앱에서 열어주세요. 구절은 직접 입력해 저장할 수 있습니다."
-        : "이 화면에서는 Claude 분석을 사용할 수 없습니다. claude.ai에 로그인한 상태로 열어주세요. 구절은 직접 입력해 저장할 수 있습니다.";
-      $("#analyzeBtn").hidden = true;
+    if (!S.sample) {
+      setSampleOff(window.claude?.use
+        ? "Claude 분석에 연결하지 못했습니다. claude.ai에 로그인한 상태에서 이 앱의 claude.ai/artifact/… 주소로 다시 열어주세요. 구절은 ‘직접 입력’으로 저장할 수 있습니다."
+        : "지금은 Claude 밖에서 열려 있어 사진 분석을 쓸 수 없습니다. claude.ai에 로그인한 브라우저나 Claude 앱에서 이 앱의 claude.ai/artifact/… 주소로 열어주세요. 구절은 ‘직접 입력’으로 저장할 수 있습니다.");
     }
+  }
+  const sampleReady = initSample();
+
+  function setSampleOff(text) {
+    for (const id of ["#sampleOff", "#sampleOff2"]) { const n = $(id); n.hidden = false; n.textContent = text; }
+    $("#analyzeBtn").hidden = true;
   }
 
   async function decode(file) {
@@ -420,6 +425,9 @@ Reply with ONLY this JSON, no other text:
   }
 
   const ERR = {
+    not_declared: "앱 설정 문제로 분석할 수 없습니다. 만든 사람에게 알려주세요.",
+    capability_disabled: "이 화면(앱 버전)에서는 Claude 분석을 쓸 수 없습니다. 최신 Claude 앱이나 claude.ai 웹에서 열어주세요.",
+    capability_removed: "이 화면(앱 버전)에서는 Claude 분석을 쓸 수 없습니다. 최신 Claude 앱이나 claude.ai 웹에서 열어주세요.",
     not_granted: "Claude 사용을 허용하지 않아 분석할 수 없습니다. 구절을 직접 입력할 수 있습니다.",
     sampling_disabled: "이 계정에서는 Claude 분석을 사용할 수 없습니다.",
     images_unavailable: "이 화면에서는 이미지를 보낼 수 없습니다. claude.ai 웹이나 앱에서 열어주세요.",
@@ -470,7 +478,7 @@ Reply with ONLY this JSON, no other text:
       else if (e?.code === "cancelled") setStatus(null);
       else {
         setStatus("error", ERR[e?.code] || ERR.upstream_error);
-        if (PERMANENT.includes(e?.code)) btn.hidden = true;
+        if (PERMANENT.includes(e?.code)) setSampleOff(ERR[e.code] || "이 화면에서는 Claude 분석을 사용할 수 없습니다. 구절은 ‘직접 입력’으로 저장할 수 있습니다.");
       }
     } finally {
       btn.disabled = false; $("#stopBtn").hidden = true; S.ctl = null;
@@ -502,7 +510,11 @@ Reply with ONLY this JSON, no other text:
     $("#imageNote").hidden = true;
     setStatus(null);
     renderDrafts();
-    if (S.sample && S.imgLimits) analyze();
+    if (!S.sample) setStatus("loading", "Claude 연결을 확인하는 중…");
+    sampleReady.then(() => {
+      if (S.file !== file) return;
+      if (S.sample) analyze(); else setStatus(null);
+    });
   }
   $("#fileInput").addEventListener("change", (e) => { pickFile(e.target.files[0]); e.target.value = ""; });
   const drop = $("#drop");
@@ -804,6 +816,5 @@ Reply with ONLY this JSON, no other text:
   } catch {}
   renderAll();
   initStore();
-  initSample();
 })();
 </script>
