@@ -430,7 +430,7 @@ Reply with ONLY this JSON, no other text:
     capability_removed: "이 화면(앱 버전)에서는 Claude 분석을 쓸 수 없습니다. 최신 Claude 앱이나 claude.ai 웹에서 열어주세요.",
     not_granted: "Claude 사용을 허용하지 않아 분석할 수 없습니다. 구절을 직접 입력할 수 있습니다.",
     sampling_disabled: "이 계정에서는 Claude 분석을 사용할 수 없습니다.",
-    images_unavailable: "이 화면에서는 이미지를 보낼 수 없습니다. claude.ai 웹이나 앱에서 열어주세요.",
+    images_unavailable: "지금 열어 둔 Claude 화면은 이 앱이 Claude에게 사진을 보내는 기능을 지원하지 않습니다(Claude 쪽 제한). 다른 방식으로 같은 링크를 열어보세요. 데스크톱 앱이라면 크롬 등 브라우저의 claude.ai에서, 브라우저라면 휴대폰 Claude 앱에서 열면 됩니다. 그동안은 ‘직접 입력’으로 저장할 수 있습니다.",
     image_rejected: "이 사진을 읽을 수 없습니다. JPG 또는 PNG 사진으로 다시 올려주세요.",
     rate_limited: "요청이 많거나 사용 한도에 도달했습니다. 잠시 후 다시 시도해주세요.",
     session_expired: "로그인이 만료되었습니다. 다시 로그인한 뒤 시도해주세요.",
@@ -477,8 +477,8 @@ Reply with ONLY this JSON, no other text:
       if (e?.message === "decode") setStatus("error", "이 사진 형식을 열 수 없습니다. JPG 또는 PNG로 다시 올려주세요.");
       else if (e?.code === "cancelled") setStatus(null);
       else {
-        setStatus("error", ERR[e?.code] || ERR.upstream_error);
-        if (PERMANENT.includes(e?.code)) setSampleOff(ERR[e.code] || "이 화면에서는 Claude 분석을 사용할 수 없습니다. 구절은 ‘직접 입력’으로 저장할 수 있습니다.");
+        if (PERMANENT.includes(e?.code)) { setStatus(null); setSampleOff(ERR[e.code] || "이 화면에서는 Claude 분석을 사용할 수 없습니다. 구절은 ‘직접 입력’으로 저장할 수 있습니다."); }
+        else setStatus("error", ERR[e?.code] || ERR.upstream_error);
       }
     } finally {
       btn.disabled = false; $("#stopBtn").hidden = true; S.ctl = null;
