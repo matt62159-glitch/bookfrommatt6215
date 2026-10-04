@@ -405,14 +405,15 @@ details.info li { margin-bottom: 4px; }
     return `You are reading a photo of a printed book page taken by a reader. ${imgs}
 Book (context only, never use it to fill in text): "${title || "unknown"}"${author ? " by " + author : ""}.
 
-TASK: Find the passages the reader marked by hand — underlines (pen, pencil, or highlighter lines under text), highlighter coloring, or hand-drawn brackets such as [ ], 「 」, ( ) or vertical lines in the margin marking a range. Extract ONLY the marked printed text.
+TASK: Find the passages the reader marked by hand — underlines (pen, pencil, or highlighter lines under text), highlighter coloring, or hand-drawn brackets or corner marks such as [ ], 「 」, ⌐ ¬, ( ) marking a range. Treat everything inside a hand-drawn bracket or corner mark as underlined; if only the opening mark is drawn, the range runs from it to the end of that sentence. IGNORE circles or stars drawn around or next to single words and other margin symbols: they are not passages and do not set a range.
 
 RULES
 1. Copy the printed text exactly, character for character. Do not summarize, paraphrase, correct, modernize, translate, or complete it. Keep the original punctuation and quotation marks.
 2. Join line breaks inside one passage. In Korean, if a word is split across a line break, join it without a space; otherwise join lines with a single space. Remove end-of-line hyphenation only when a word is clearly split.
+2b. Save whole sentences: if an underline starts or ends in the middle of a sentence, extend the item to the start and end of every sentence the mark touches (up to the sentence-ending punctuation).
 3. Marks that are not contiguous are SEPARATE items. A mark that continues across consecutive lines is ONE item. Output items in reading order.
 4. Never output unmarked body text. If nothing is marked, return an empty "items" array.
-5. Do not guess. Replace any character or word you cannot read with [?], set "needsReview": true, and explain in "reviewNote". If the start or end of a mark is unclear, extract only the part that is clearly marked, set "needsReview": true, and describe the unclear boundary in "reviewNote".
+5. Do not guess. Replace any character or word you cannot read with [?], set "needsReview": true, and explain in "reviewNote". If it is unclear which sentences a mark touches, set "needsReview": true and describe it in "reviewNote".
 6. Page numbers: read the page number PRINTED on the page (usually in the top or bottom margin). For a two-page spread, give each item the page it is on. If a page number is not visible or not legible, use null. Never infer a page number from a neighbouring page or from the content.
 7. Handwritten notes in margins are not book text; do not include them.
 
