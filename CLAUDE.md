@@ -25,3 +25,8 @@
 6. 줄바꿈은 이어 붙인다. 한 단어가 줄에서 끊겼으면 띄어쓰기 없이 붙인다. 번역자 대괄호 `[원한을]` 같은 인쇄된 기호는 그대로 둔다.
 7. 판독이 어려운 글자는 추측하지 말고 `[?]`로 쓰고 `flagged: true`로 저장한다.
 8. 페이지 번호는 사진에 인쇄된 것을 쓴다. 안 보이면 비워 두고(`page: ""`, `pageNum: null`) 사용자에게 알린다.
+
+# 아침 뉴스 노트 (`news/`)
+
+뉴스 읽기·질문 학습 앱. `news/index.html`이 Artifact로 게시되어 있다: https://claude.ai/artifact/8CXzcr6VTcg7Cfs6nD6G3E
+구조, 저장 경로, 수집 루틴은 `news/README.md`와 `news/ROUTINE.md`에 있다. 대화에서 "검색 확인 요청 처리해줘"라고 하면 ROUTINE.md 5단계를 따른다.

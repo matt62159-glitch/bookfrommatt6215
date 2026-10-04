@@ -1,0 +1,988 @@
+<title>아침 뉴스 노트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 신문 열람실 책상 — 왼쪽 목록, 가운데 해설 원고, 오른쪽 질문 노트. 휴대폰에서는 아래 탭으로 전환 */
+:root {
+  --bg: #F3F6F5;
+  --surface: #FFFFFF;
+  --surface-2: #E9EFED;
+  --ink: #1A2327;
+  --muted: #5A686E;
+  --line: #D5DEDB;
+  --accent: #1D5870;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DEEBF0;
+  --fact: #2B6648;
+  --fact-soft: #E1F0E7;
+  --claim: #8E5410;
+  --claim-soft: #F6EBDC;
+  --ai: #574887;
+  --ai-soft: #ECE8F6;
+  --warn: #A13A28;
+  --warn-soft: #F8E4DF;
+  --demo: #7A5A00;
+  --demo-soft: #FFF2C6;
+  --f-display: "Nanum Myeongjo", "AppleMyungjo", "Batang", serif;
+  --f-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181B; --surface: #192125; --surface-2: #212B30; --ink: #E3EAEC; --muted: #9AAAB0; --line: #2E3A3F;
+    --accent: #7FB8D0; --accent-ink: #0E1A20; --accent-soft: #1E3540;
+    --fact: #8CCBA6; --fact-soft: #1B3127; --claim: #E2B06E; --claim-soft: #352817; --ai: #B7A8EC; --ai-soft: #2A2540;
+    --warn: #F0A190; --warn-soft: #3A211B; --demo: #F0D27A; --demo-soft: #3A3215;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181B; --surface: #192125; --surface-2: #212B30; --ink: #E3EAEC; --muted: #9AAAB0; --line: #2E3A3F;
+  --accent: #7FB8D0; --accent-ink: #0E1A20; --accent-soft: #1E3540;
+  --fact: #8CCBA6; --fact-soft: #1B3127; --claim: #E2B06E; --claim-soft: #352817; --ai: #B7A8EC; --ai-soft: #2A2540;
+  --warn: #F0A190; --warn-soft: #3A211B; --demo: #F0D27A; --demo-soft: #3A3215;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+* { box-sizing: border-box; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.app { height: 100%; display: flex; flex-direction: column; }
+
+/* 상단 */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: 21px; margin: 0; letter-spacing: -0.01em; }
+.brand .date { color: var(--muted); font-size: 13px; }
+.top .meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 6px 14px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.small { padding: 4px 9px; font-size: 13px; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: default; }
+.navs { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.banner { padding: 9px 20px; font-size: 14px; border-bottom: 1px solid var(--line); }
+.banner.demo { background: var(--demo-soft); color: var(--demo); font-weight: 500; }
+.banner.warn { background: var(--warn-soft); color: var(--warn); }
+.banner.info { background: var(--accent-soft); color: var(--ink); }
+
+/* 3단 */
+.shell { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(300px, 400px); }
+.pane { min-width: 0; min-height: 0; overflow-y: auto; padding: 18px 20px 40px; }
+#pane-list { border-right: 1px solid var(--line); background: var(--surface); }
+#pane-qa { border-left: 1px solid var(--line); background: var(--surface); }
+.pane-title { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 0 0 10px; }
+
+/* 필터 */
+.filters { display: grid; gap: 10px; margin-bottom: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.row label.lbl { font-size: 12.5px; color: var(--muted); min-width: 44px; }
+select { border: 1px solid var(--line); background: var(--surface); border-radius: 7px; padding: 4px 8px; font-size: 13.5px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 11px; font-size: 13px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.status { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; font-size: 13px; display: grid; gap: 4px; margin-bottom: 14px; background: var(--bg); }
+.status .s-row { display: flex; gap: 8px; align-items: baseline; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; transform: translateY(-1px); background: var(--muted); }
+.dot.ok { background: var(--fact); } .dot.fail { background: var(--warn); }
+.status .err { color: var(--warn); font-size: 12.5px; }
+
+details.add { border: 1px dashed var(--line); border-radius: var(--r); padding: 8px 12px; margin-bottom: 16px; font-size: 13.5px; }
+details.add summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+.field { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); }
+textarea.field { resize: vertical; min-height: 90px; line-height: 1.6; }
+.stack { display: grid; gap: 8px; margin-top: 8px; }
+
+/* 기사 목록 */
+.group { margin-bottom: 18px; }
+.group h3 { font-size: 13px; margin: 0 0 8px; display: flex; justify-content: space-between; color: var(--muted); font-weight: 700; }
+.card { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 10px 12px; cursor: pointer; margin-bottom: 8px; }
+.card:hover { border-color: var(--accent); }
+.card.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.card .t { font-family: var(--f-display); font-weight: 700; font-size: 15.5px; line-height: 1.45; margin: 4px 0 6px; text-wrap: balance; }
+.card.read .t { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 4px 6px; font-size: 12px; align-items: center; }
+.tag { border-radius: 4px; padding: 0 6px; background: var(--surface-2); color: var(--muted); line-height: 1.7; }
+.tag.econ { background: var(--claim-soft); color: var(--claim); }
+.tag.tech { background: var(--ai-soft); color: var(--ai); }
+.tag.ok { background: var(--fact-soft); color: var(--fact); }
+.tag.no { background: var(--warn-soft); color: var(--warn); }
+.tag.rel { background: var(--accent-soft); color: var(--accent); }
+.tag.demo { background: var(--demo-soft); color: var(--demo); font-weight: 700; }
+.times { font-size: 12px; color: var(--muted); display: grid; gap: 0; }
+.empty { color: var(--muted); font-size: 14px; padding: 14px; border: 1px dashed var(--line); border-radius: var(--r); background: var(--surface); }
+.empty strong { color: var(--ink); }
+
+/* 해설 */
+#pane-article .wrap { max-width: 720px; margin: 0 auto; }
+.a-head h2 { font-family: var(--f-display); font-weight: 800; font-size: 27px; line-height: 1.38; margin: 8px 0 10px; text-wrap: balance; letter-spacing: -0.01em; }
+.a-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.a-meta dt { font-weight: 500; } .a-meta dd { margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.box { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 14px 16px; margin-bottom: 16px; }
+.box.no { border-color: var(--warn); background: var(--warn-soft); }
+.box h4 { margin: 0 0 6px; font-size: 15px; }
+.reading { font-size: 16.5px; line-height: 1.8; }
+.sec { margin: 0 0 26px; }
+.sec-h { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; flex-wrap: wrap; }
+.sec-h h3 { font-size: 17px; margin: 0; }
+.lab { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 7px; letter-spacing: .02em; }
+.lab.fact { background: var(--fact-soft); color: var(--fact); }
+.lab.claim { background: var(--claim-soft); color: var(--claim); }
+.lab.ai { background: var(--ai-soft); color: var(--ai); }
+.lab.ext { background: var(--accent-soft); color: var(--accent); }
+.save { margin-left: auto; }
+.oneline { font-family: var(--f-display); font-weight: 700; font-size: 20px; line-height: 1.55; border-left: 3px solid var(--accent); padding: 2px 0 2px 14px; margin: 0; }
+ul.b { margin: 0; padding-left: 1.15em; display: grid; gap: 6px; }
+ol.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
+.claim-item { border-left: 2px solid var(--claim); padding: 2px 0 2px 12px; margin-bottom: 10px; }
+.claim-item .who { font-weight: 700; font-size: 14px; color: var(--claim); }
+.claim-item .basis { font-size: 14.5px; color: var(--muted); }
+.terms { display: grid; gap: 10px; margin: 0; }
+.terms dt { font-weight: 700; } .terms dt small { font-weight: 400; color: var(--muted); margin-left: 6px; }
+.terms dd { margin: 2px 0 0; }
+.cond { display: grid; gap: 8px; margin-top: 12px; font-size: 15px; }
+.cond > div { background: var(--ai-soft); border-radius: 8px; padding: 8px 12px; }
+.cond .if { color: var(--ai); font-weight: 700; display: block; }
+.ex { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+.ex .lab { flex: none; }
+.part-title { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 34px 0 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.note { font-size: 13px; color: var(--muted); }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.9s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+/* 질문 */
+.suggest { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.turn { margin-bottom: 18px; }
+.q { background: var(--accent-soft); border-radius: 10px 10px 2px 10px; padding: 8px 12px; margin-left: 24px; font-weight: 500; }
+.q-time { font-size: 11.5px; color: var(--muted); text-align: right; margin: 2px 0 6px; }
+.ans { display: grid; gap: 8px; }
+.ans .part { border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; font-size: 14.5px; }
+.ans .part .lab { display: inline-block; margin-bottom: 4px; }
+.ans .part ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.ans .part.none { color: var(--muted); font-size: 13.5px; }
+.src { font-size: 13px; display: grid; gap: 2px; margin-top: 6px; }
+.ask { position: sticky; bottom: -40px; background: var(--surface); padding: 10px 0 0; display: grid; gap: 6px; }
+
+/* 기록 */
+.records { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 20px 60px; }
+.records .wrap { max-width: 960px; margin: 0 auto; display: grid; gap: 22px; }
+.rec-grid { display: grid; grid-template-columns: minmax(150px, 200px) minmax(0, 1fr); gap: 22px; }
+.days { display: grid; gap: 4px; align-content: start; }
+.day { text-align: left; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 6px 10px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.day[aria-pressed="true"] { background: var(--surface); border-color: var(--line); font-weight: 700; }
+.rec-list { display: grid; gap: 8px; }
+.rec { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 12px; font-size: 14px; }
+.rec .k { font-size: 12px; color: var(--muted); }
+.rec button.linkish { background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-align: left; font-weight: 500; }
+.rec h4 { font-size: 13px; margin: 14px 0 6px; color: var(--muted); }
+.prose { max-width: 70ch; font-size: 14.5px; }
+.prose h3 { font-size: 16px; margin: 18px 0 6px; }
+.prose code { font-family: var(--f-mono); font-size: 13px; background: var(--surface-2); padding: 0 4px; border-radius: 4px; }
+
+.tabbar { display: none; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 8px; font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+
+@media (max-width: 1100px) and (min-width: 901px) {
+  .shell { grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(280px, 340px); }
+}
+@media (max-width: 900px) {
+  .app { height: auto; min-height: 100%; }
+  .shell { display: block; }
+  .pane { overflow: visible; padding: 16px 16px 90px; border: 0 !important; }
+  .shell[data-tab="list"] #pane-article, .shell[data-tab="list"] #pane-qa,
+  .shell[data-tab="article"] #pane-list, .shell[data-tab="article"] #pane-qa,
+  .shell[data-tab="qa"] #pane-list, .shell[data-tab="qa"] #pane-article { display: none; }
+  .records { padding: 16px 16px 90px; }
+  .rec-grid { grid-template-columns: 1fr; }
+  .days { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+  .top { padding: 10px 16px; }
+  .top .navs .wide { display: none; }
+  .banner { padding: 8px 16px; }
+  .a-head h2 { font-size: 23px; }
+  .ask { bottom: 0; }
+  .tabbar { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 10; }
+  .tabbar button { border: 0; background: none; padding: 8px 4px; font-size: 14px; border-radius: 8px; cursor: pointer; }
+  .tabbar button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>아침 뉴스 노트</h1><span class="date" id="today"></span></div>
+    <div class="meta" id="topmeta"><span>불러오는 중…</span></div>
+    <div class="navs">
+      <button class="btn primary" id="btn-refresh" type="button">새 기사 불러오기</button>
+      <button class="btn wide" id="btn-view-read" type="button" aria-pressed="true">읽기</button>
+      <button class="btn wide" id="btn-view-rec" type="button" aria-pressed="false">기록</button>
+      <button class="btn" id="btn-demo" type="button" aria-pressed="false">데모</button>
+      <button class="btn" id="btn-setup" type="button" aria-pressed="false">설정·안내</button>
+    </div>
+  </header>
+  <div id="banner" hidden></div>
+
+  <main class="shell" id="shell" data-tab="list">
+    <aside class="pane" id="pane-list" aria-label="기사 목록"></aside>
+    <section class="pane" id="pane-article" aria-label="요약과 해설"></section>
+    <section class="pane" id="pane-qa" aria-label="질문과 답변"></section>
+  </main>
+  <section class="records" id="records" hidden></section>
+  <section class="records" id="setup" hidden></section>
+
+  <nav class="tabbar" id="tabbar" aria-label="화면 전환">
+    <button type="button" data-tab="list" aria-pressed="true">목록</button>
+    <button type="button" data-tab="article" aria-pressed="false">해설</button>
+    <button type="button" data-tab="qa" aria-pressed="false">질문</button>
+    <button type="button" data-tab="rec" aria-pressed="false">기록</button>
+  </nav>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ------------------------------------------------------------ 상수 */
+const OUTLETS = {
+  donga:   { name: "동아일보", hosts: ["donga.com"], prioritize: true },
+  hankook: { name: "한국일보", hosts: ["hankookilbo.com"], prioritize: true },
+  aitimes: { name: "AI타임스", hosts: ["aitimes.com"], prioritize: false },
+};
+const OUTLET_ORDER = ["donga", "hankook", "aitimes", "other"];
+const CATS = ["경제", "기술", "기타"];
+const SUGGEST = ["더 쉽게 설명해줘", "구체적인 예를 들어줘", "왜 이런 결과가 나오는 거야?", "이 주장에 반대하는 근거는?", "기사에서 확인된 사실과 전망을 나눠줘"];
+const BODY_FOR_AI = 14000;
+const TRIGGER_SERVER = "Claude Code Remote";
+
+/* ------------------------------------------------------------ 데모 (실제 기사와 섞지 않는다) */
+const DEMO = {
+  article: {
+    id: "demo-1", demo: true, outlet: "other", outletName: "데모 매체", url: "",
+    title: "[데모] 가상 기업 '한빛반도체', 전력 절반 쓰는 AI 칩 시험 생산 발표",
+    category: "기술", section: "데모", source: "demo",
+    publishedAt: new Date(Date.now() - 3 * 3600e3).toISOString(), collectedAt: new Date(Date.now() - 3600e3).toISOString(),
+    bodyStatus: "ok", body: "(데모용으로 지어낸 본문입니다.)", bodyNote: "데모용으로 지어낸 본문",
+  },
+  analysis: {
+    kind: "tech",
+    oneLine: "가상 기업 한빛반도체가 같은 AI 계산을 절반의 전력으로 하는 칩을 시험 생산한다고 밝혔지만, 성능은 회사 자체 측정치다.",
+    facts: ["한빛반도체는 AI 추론용 칩의 시험 생산을 시작했다고 발표했다.", "회사는 기존 제품 대비 전력 소모가 50% 줄었다고 밝혔다.", "양산 시점은 내년 하반기로 제시됐다."],
+    claims: [{ who: "한빛반도체 대표", claim: "데이터센터 전기 요금을 크게 줄일 것", basis: "회사 내부 시험 결과만 제시. 외부 검증 언급 없음" }],
+    issues: ["외부 기관이 같은 조건에서 측정한 결과가 있는가", "양산 수율(불량 없이 만들어지는 비율)이 충분한가"],
+    explain: {
+      terms: [
+        { term: "AI 추론", full: "", plain: "이미 학습을 마친 AI가 질문에 답을 내놓는 계산. 공부를 끝낸 학생이 시험 문제를 푸는 단계와 비슷하다." },
+        { term: "NPU", full: "Neural Processing Unit, 신경망 처리 장치", plain: "AI 계산만 빠르게 하도록 만든 전용 칩." },
+        { term: "수율", full: "", plain: "만든 칩 가운데 제대로 작동하는 칩의 비율." },
+      ],
+      background: "AI 서비스가 늘면서 데이터센터가 쓰는 전기가 빠르게 늘었다. 칩 하나가 같은 일을 더 적은 전기로 하면 운영비와 냉각 비용이 함께 줄어든다.",
+      mechanism: ["AI 계산은 같은 종류의 곱셈·덧셈을 아주 많이 반복한다.", "범용 칩은 여러 일을 하도록 설계돼 이 반복 계산에서 전기를 더 쓴다.", "전용 칩은 반복 계산에 필요한 회로만 촘촘히 넣어 데이터 이동을 줄인다.", "데이터 이동이 줄면 같은 계산에 드는 전기가 줄어든다."],
+      conditions: [{ if: "실제 서비스의 계산 방식이 칩 설계와 맞으면", then: "절감 효과가 발표치에 가까울 수 있다" }, { if: "계산 방식이 다르면", then: "절감 폭이 작아지거나 오히려 느려질 수 있다" }],
+      examples: [{ text: "기존 칩 1개가 하루 10kWh를 쓴다면, 절반이면 5kWh다. 칩 1,000개면 하루 5,000kWh 차이다.", numbers: "illustrative" }, { text: "회사는 전력 소모가 50% 줄었다고 밝혔다.", numbers: "article" }],
+      meaning: ["범용 칩 대신 전용 칩을 쓰는 흐름의 한 사례다.", "실제 활용은 데이터센터 운영사가 도입 시험을 거친 뒤에야 판단할 수 있다."],
+      unverified: ["전력 50% 절감은 회사 자체 측정치다.", "양산 일정은 회사의 계획이다."],
+    },
+  },
+  chat: [{
+    id: "t-demo", q: "더 쉽게 설명해줘", at: new Date(Date.now() - 1800e3).toISOString(),
+    a: {
+      article: ["회사는 같은 AI 계산을 기존보다 전기를 절반만 써서 할 수 있다고 발표했다.", "이 수치는 회사가 직접 잰 결과라고 기사에 나온다."],
+      inference: ["전기를 덜 쓰면 열도 덜 나서 냉각 비용도 줄어들 가능성이 크다(일반적인 원리에 따른 추론)."],
+      verify: { needed: true, query: "한빛반도체 AI 칩 외부 성능 검증", reason: "외부 검증 여부는 기사에 없음" },
+    },
+  }],
+};
+
+/* ------------------------------------------------------------ 상태 */
+const S = {
+  db: null, user: null, sample: null, mcp: null, uid: null, ready: false, storeError: "",
+  articles: new Map(), analyses: new Map(), chats: new Map(), notes: new Map(), verify: new Map(),
+  status: null, settings: { hours: 24, perOutlet: 5, triggerId: "", autoCollect: true },
+  loaded: { settings: false, status: false, articles: false },
+  filters: { outlet: "all", cat: "all", unread: false, bookmarked: false },
+  selected: null, demo: false, view: "read", tab: "list", recDay: null,
+  busy: { analysis: null, ask: null, refresh: false }, aiError: {}, refreshMsg: "",
+};
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+
+/* ------------------------------------------------------------ 시간 (한국시간) */
+const fmtFull = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "long", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+const fmtDay = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "short" });
+const fmtKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
+const kst = (iso) => iso ? fmtFull.format(new Date(iso)) : "알 수 없음";
+const dayKey = (iso) => iso ? fmtKey.format(new Date(iso)) : "";
+const dayLabel = (key) => fmtDay.format(new Date(key + "T12:00:00+09:00"));
+function ago(iso) {
+  if (!iso) return "";
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return "방금"; if (m < 60) return m + "분 전";
+  const h = Math.round(m / 60); if (h < 48) return h + "시간 전";
+  return Math.round(h / 24) + "일 전";
+}
+
+/* ------------------------------------------------------------ URL → 기사 ID (collect.py와 같은 규칙) */
+function normalizeUrl(raw) {
+  const u = new URL(raw.trim());
+  let host = u.hostname.toLowerCase();
+  if (host.startsWith("m.")) host = "www." + host.slice(2);
+  const path = u.pathname.replace(/\/+$/, "") || "/";
+  const drop = new Set(["fbclid", "gclid", "ref", "from", "rss", "sns"]);
+  const keep = [...u.searchParams.entries()].filter(([k, v]) => v !== "" && !k.toLowerCase().startsWith("utm_") && !drop.has(k.toLowerCase()));
+  keep.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0);
+  const q = new URLSearchParams(keep).toString();
+  return "https://" + host + path + (q ? "?" + q : "");
+}
+function articleId(url) {
+  let h = 0xcbf29ce484222325n;
+  for (const b of new TextEncoder().encode(normalizeUrl(url))) { h ^= BigInt(b); h = (h * 0x100000001b3n) & 0xffffffffffffffffn; }
+  return "a" + h.toString(16).padStart(16, "0");
+}
+function outletFor(url) {
+  const host = new URL(url).hostname.toLowerCase();
+  for (const [k, o] of Object.entries(OUTLETS)) if (o.hosts.some((h) => host === h || host.endsWith("." + h))) return k;
+  return "other";
+}
+
+/* ------------------------------------------------------------ 같은 사건 묶기 (제목 글자쌍 유사도) */
+function bigrams(t) {
+  const s = t.replace(/\[[^\]]*\]|\([^)]*\)/g, " ").replace(/[^\p{L}\p{N}]+/gu, "");
+  const out = new Set(); for (let i = 0; i < s.length - 1; i++) out.add(s.slice(i, i + 2)); return out;
+}
+function relatedMap(list) {
+  const bg = list.map((a) => bigrams(a.title || "")), rel = new Map();
+  list.forEach((a) => rel.set(a.id, []));
+  for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+    if (list[i].outlet === list[j].outlet) continue;
+    let inter = 0; for (const x of bg[i]) if (bg[j].has(x)) inter++;
+    const uni = bg[i].size + bg[j].size - inter;
+    if (inter >= 4 && uni && inter / uni >= 0.22) { rel.get(list[i].id).push(list[j]); rel.get(list[j].id).push(list[i]); }
+  }
+  return rel;
+}
+
+/* ------------------------------------------------------------ 저장소 */
+const base = () => "data/users/" + S.uid;
+const col = (name) => S.db.doc(base() + "/news").collection(name);
+const chains = {};
+function save(ref, data, okMsg) {
+  if (S.demo) { toast("데모에서는 저장하지 않습니다."); return Promise.resolve(false); }
+  if (!S.db || !S.uid) { toast("저장소에 연결되지 않아 저장하지 못했습니다."); return Promise.resolve(false); }
+  const p = (chains[ref.path] || Promise.resolve()).then(() => ref.set(data)).then(() => { if (okMsg) toast(okMsg); return true; }, (e) => {
+    toast(e && e.code === "quota_exceeded" ? "저장 공간이 가득 찼습니다. 오래된 기록을 지워 주세요." : "저장하지 못했습니다 (" + (e && e.code || "오류") + ").");
+    return false;
+  });
+  chains[ref.path] = p; return p;
+}
+function subscribe() {
+  const onErr = (e) => { S.storeError = e && e.code || "unavailable"; render(); };
+  const intoMap = (m, key) => (snap) => { m.clear(); snap.docs.forEach((d) => m.set(d.id, d.data())); S.loaded[key] = true; render(); };
+  col("articles").orderBy("collectedAt", "desc").limit(600).onSnapshot(intoMap(S.articles, "articles"), onErr);
+  col("analyses").onSnapshot(intoMap(S.analyses, "analyses"), onErr);
+  col("chats").onSnapshot(intoMap(S.chats, "chats"), onErr);
+  col("notes").onSnapshot(intoMap(S.notes, "notes"), onErr);
+  col("verify").onSnapshot(intoMap(S.verify, "verify"), onErr);
+  S.db.doc(base() + "/status").onSnapshot((d) => { S.status = d.exists ? d.data() : null; S.loaded.status = true; render(); maybeAutoCollect(); }, onErr);
+  S.db.doc(base() + "/settings").onSnapshot((d) => { if (d.exists) S.settings = { ...S.settings, ...d.data() }; S.loaded.settings = true; render(); maybeAutoCollect(); }, onErr);
+}
+
+/* ------------------------------------------------------------ 데이터 접근 (데모와 실제를 분리) */
+const allArticles = () => S.demo ? [DEMO.article] : [...S.articles.values()];
+const getArticle = (id) => S.demo ? (id === DEMO.article.id ? DEMO.article : null) : S.articles.get(id);
+const getAnalysis = (id) => S.demo ? (id === DEMO.article.id ? { data: DEMO.analysis, createdAt: DEMO.article.collectedAt, demo: true } : null) : S.analyses.get(id);
+const getTurns = (id) => S.demo ? (id === DEMO.article.id ? DEMO.chat : []) : (S.chats.get(id)?.turns || []);
+const getNote = (id) => (S.demo ? null : S.notes.get(id)) || { articleId: id, read: false, bookmarked: false, memo: "", saved: [] };
+const hasBody = (a) => a && (a.bodyStatus === "ok" || a.bodyStatus === "pasted") && (a.body || "").length > 0;
+const isTE = (a) => a.category === "경제" || a.category === "기술";
+
+function visibleGroups() {
+  const now = Date.now(), win = S.settings.hours * 3600e3, f = S.filters;
+  const list = allArticles().filter((a) => {
+    if (!a.demo && a.source !== "manual") {
+      const t = a.publishedAt ? new Date(a.publishedAt).getTime() : NaN;
+      if (!(t >= now - win)) return false;
+    }
+    const n = getNote(a.id);
+    if (f.outlet !== "all" && a.outlet !== f.outlet) return false;
+    if (f.cat !== "all" && a.category !== f.cat) return false;
+    if (f.unread && n.read) return false;
+    if (f.bookmarked && !n.bookmarked) return false;
+    return true;
+  });
+  const groups = new Map();
+  for (const key of OUTLET_ORDER) groups.set(key, []);
+  for (const a of list) (groups.get(a.outlet) || groups.get("other")).push(a);
+  const shown = [];
+  for (const [key, arr] of groups) {
+    const pri = OUTLETS[key]?.prioritize;
+    arr.sort((x, y) => (pri ? (isTE(y) - isTE(x)) : 0) || String(y.publishedAt || y.collectedAt).localeCompare(String(x.publishedAt || x.collectedAt)));
+    const rss = arr.filter((a) => a.source !== "manual"), manual = arr.filter((a) => a.source === "manual");
+    const kept = [...rss.slice(0, S.settings.perOutlet), ...manual];
+    groups.set(key, { items: kept, hidden: rss.length - Math.min(rss.length, S.settings.perOutlet) });
+    shown.push(...kept);
+  }
+  return { groups, rel: relatedMap(shown), total: shown.length };
+}
+
+/* ------------------------------------------------------------ 렌더 */
+function render() {
+  $("today").textContent = fmtDay.format(new Date());
+  renderTop(); renderBanner();
+  const read = S.view === "read";
+  $("shell").hidden = !read; $("records").hidden = S.view !== "rec"; $("setup").hidden = S.view !== "setup";
+  $("btn-view-read").setAttribute("aria-pressed", read); $("btn-view-rec").setAttribute("aria-pressed", S.view === "rec");
+  $("btn-setup").setAttribute("aria-pressed", S.view === "setup"); $("btn-demo").setAttribute("aria-pressed", S.demo);
+  $("shell").dataset.tab = S.tab;
+  for (const b of $("tabbar").querySelectorAll("button")) b.setAttribute("aria-pressed", S.view === "rec" ? b.dataset.tab === "rec" : (read && b.dataset.tab === S.tab));
+  if (read) { renderList(); renderArticle(); renderQA(); }
+  if (S.view === "rec") renderRecords();
+  if (S.view === "setup") renderSetup();
+}
+
+function renderTop() {
+  const st = S.status;
+  const parts = [];
+  if (S.demo) parts.push("<span>데모 화면</span>");
+  else if (st?.lastRunAt) parts.push(`<span>마지막 수집 <b class="mono">${esc(kst(st.lastRunAt))}</b> (${esc(ago(st.lastRunAt))})</span>`);
+  else if (S.loaded.status) parts.push("<span>아직 수집 기록 없음</span>");
+  if (S.refreshMsg) parts.push(`<span>${esc(S.refreshMsg)}</span>`);
+  $("topmeta").innerHTML = parts.join("") || "<span>불러오는 중…</span>";
+  const b = $("btn-refresh"); b.disabled = S.busy.refresh || S.demo;
+  b.innerHTML = S.busy.refresh ? '<span class="spin"></span> 요청 중' : "새 기사 불러오기";
+}
+
+function renderBanner() {
+  const el = $("banner");
+  let cls = "", html = "";
+  if (S.demo) { cls = "demo"; html = "데모 화면입니다. 아래 기사와 해설은 화면 설명을 위해 지어낸 내용이며 실제 기사가 아닙니다. 데모에서는 아무것도 저장하지 않습니다."; }
+  else if (S.ready && !S.db) { cls = "warn"; html = "개인 저장소에 연결하지 못했습니다. claude.ai에 로그인한 상태로 이 페이지를 열어야 기사와 기록이 보입니다."; }
+  else if (S.storeError) { cls = "warn"; html = "저장소 연결이 끊겼습니다 (" + esc(S.storeError) + "). 페이지를 새로 열어 주세요."; }
+  el.hidden = !html; el.className = "banner " + cls; el.innerHTML = html;
+}
+
+function statusBlock() {
+  if (S.demo) return "";
+  const st = S.status;
+  if (!st) return `<div class="status"><div class="s-row"><span class="dot"></span><span>수집 기록이 아직 없습니다. 수집기가 처음 실행되면 매체별 성공·실패가 여기에 표시됩니다.</span></div></div>`;
+  const rows = ["donga", "hankook", "aitimes"].map((k) => {
+    const o = st.outlets?.[k];
+    if (!o) return `<div class="s-row"><span class="dot"></span><span>${OUTLETS[k].name}: 확인 안 함</span></div>`;
+    return `<div class="s-row"><span class="dot ${o.ok ? "ok" : "fail"}"></span><span><b>${OUTLETS[k].name}</b> ${o.ok ? `수집 성공 ${o.count}건` : "수집 실패"}${o.error ? `<br><span class="${o.ok ? "note" : "err"}">${esc(o.error)}</span>` : ""}</span></div>`;
+  }).join("");
+  return `<div class="status">${rows}<div class="note">점검 시각 ${esc(kst(st.lastRunAt))} · 기간 ${esc(st.hours)}시간 · 매체별 ${esc(st.perOutlet)}건</div></div>`;
+}
+
+function renderList() {
+  const f = S.filters, set = S.settings;
+  const chip = (group, val, label) => `<button class="chip" type="button" data-act="filter" data-group="${group}" data-val="${val}" aria-pressed="${f[group] === val}">${label}</button>`;
+  const opt = (vals, cur, fmt) => vals.map((v) => `<option value="${v}" ${v === cur ? "selected" : ""}>${fmt(v)}</option>`).join("");
+  let html = `<h2 class="pane-title">기사 목록</h2>${statusBlock()}
+  <div class="filters">
+    <div class="row"><label class="lbl" for="sel-hours">기간</label><select id="sel-hours">${opt([6, 12, 24, 48, 72, 168], set.hours, (v) => v === 168 ? "최근 7일" : `최근 ${v}시간`)}</select>
+      <label class="lbl" for="sel-count">매체별</label><select id="sel-count">${opt([3, 5, 10, 15, 20], set.perOutlet, (v) => v + "개")}</select></div>
+    <div class="row">${chip("outlet", "all", "전체 매체")}${Object.entries(OUTLETS).map(([k, o]) => chip("outlet", k, o.name)).join("")}${chip("outlet", "other", "기타")}</div>
+    <div class="row">${chip("cat", "all", "전체 분야")}${CATS.map((c) => chip("cat", c, c)).join("")}</div>
+    <div class="row"><button class="chip" type="button" data-act="toggle" data-group="unread" aria-pressed="${f.unread}">안 읽은 것만</button><button class="chip" type="button" data-act="toggle" data-group="bookmarked" aria-pressed="${f.bookmarked}">북마크만</button></div>
+  </div>
+  <details class="add" id="add-box" ${lsGet("addOpen", false) ? "open" : ""}><summary>기사 URL 직접 넣기</summary>
+    <form class="stack" id="add-form">
+      <input class="field" id="add-url" type="url" placeholder="https://… 기사 주소" required>
+      <input class="field" id="add-title" type="text" placeholder="제목 (모르면 비워 두세요)">
+      <button class="btn" type="submit">목록에 추가</button>
+      <span class="note">추가한 기사는 수집기가 다음에 실행될 때 본문을 확보합니다. 바로 읽으려면 해설 화면에서 본문을 붙여 넣으세요.</span>
+    </form></details>`;
+  if (!S.demo && !S.loaded.articles) {
+    html += `<div class="empty">${S.db ? '<span class="spin"></span> 저장된 기사를 불러오는 중…' : "저장소 연결을 기다리는 중…"}</div>`;
+  } else {
+    const { groups, rel, total } = visibleGroups();
+    if (!total) {
+      html += `<div class="empty"><strong>보여 줄 기사가 없습니다.</strong><br>${allArticles().length ? "필터나 기간을 넓혀 보세요." : "아직 수집된 실제 기사가 없습니다. 수집기가 연결되면 여기에 매체별 최신 기사가 들어옵니다. 지금 화면 구성을 보려면 위의 <b>데모</b>를 누르세요. 기사 URL을 직접 넣고 본문을 붙여 넣어 바로 공부할 수도 있습니다."}</div>`;
+    }
+    for (const [key, g] of groups) {
+      if (!g.items.length) continue;
+      html += `<div class="group"><h3><span>${esc(OUTLETS[key]?.name || (key === "other" ? (S.demo ? "데모" : "기타·직접 추가") : key))}</span><span class="mono">${g.items.length}${g.hidden ? ` / +${g.hidden} 숨김` : ""}</span></h3>`;
+      for (const a of g.items) html += cardHtml(a, rel.get(a.id) || []);
+      html += "</div>";
+    }
+  }
+  const pane = $("pane-list"), y = pane.scrollTop;
+  if (editing(pane)) return;
+  pane.innerHTML = html; pane.scrollTop = y;
+}
+
+function catTag(c) { return `<span class="tag ${c === "경제" ? "econ" : c === "기술" ? "tech" : ""}">${esc(c || "기타")}</span>`; }
+function bodyTag(a) {
+  if (a.bodyStatus === "ok") return '<span class="tag ok">본문 확보</span>';
+  if (a.bodyStatus === "pasted") return '<span class="tag ok">본문 붙여넣음</span>';
+  if (a.bodyStatus === "pending") return '<span class="tag">본문 대기</span>';
+  return '<span class="tag no">본문 확인 불가</span>';
+}
+function cardHtml(a, rel) {
+  const n = getNote(a.id);
+  return `<button type="button" class="card ${S.selected === a.id ? "sel" : ""} ${n.read ? "read" : ""}" data-act="open" data-id="${esc(a.id)}">
+    <div class="tags">${a.demo ? '<span class="tag demo">데모</span>' : ""}<span>${esc(a.outletName)}</span>${catTag(a.category)}${bodyTag(a)}${a.source === "manual" ? '<span class="tag">직접 추가</span>' : ""}${n.read ? '<span class="tag">읽음</span>' : ""}${n.bookmarked ? '<span class="tag rel">북마크</span>' : ""}${rel.length ? `<span class="tag rel">관련 보도 ${rel.length}</span>` : ""}</div>
+    <div class="t">${esc(a.title || "(제목 없음)")}</div>
+    <div class="times"><span>발행 <span class="mono">${esc(a.publishedAt ? kst(a.publishedAt) : "확인 안 됨")}</span></span><span>수집 <span class="mono">${esc(kst(a.collectedAt))}</span></span></div>
+  </button>`;
+}
+
+/* --- 가운데: 요약·해설 */
+function renderArticle() {
+  const pane = $("pane-article"), y = pane.scrollTop, a = getArticle(S.selected);
+  if (!a) {
+    pane.innerHTML = `<div class="wrap"><h2 class="pane-title">요약·해설</h2><div class="empty">왼쪽 목록에서 기사를 고르면 본문을 근거로 한 요약과 기술·경제 해설이 여기에 나옵니다.</div></div>`;
+    return;
+  }
+  const n = getNote(a.id), an = getAnalysis(a.id), rel = (relatedMap(allArticles()).get(a.id) || []);
+  let h = `<div class="wrap"><div class="a-head">
+    <div class="tags">${a.demo ? '<span class="tag demo">데모 · 실제 기사 아님</span>' : ""}<span>${esc(a.outletName)}</span>${catTag(a.category)}${a.section && a.section !== a.category ? `<span class="tag">${esc(a.section)}</span>` : ""}${bodyTag(a)}</div>
+    <h2>${esc(a.title || "(제목 없음)")}</h2>
+    <dl class="a-meta"><dt>발행</dt><dd class="mono">${esc(a.publishedAt ? kst(a.publishedAt) : "확인 안 됨")}</dd><dt>수집</dt><dd class="mono">${esc(kst(a.collectedAt))} ${a.source === "manual" ? "(직접 추가)" : ""}</dd>
+    ${a.url ? `<dt>원문</dt><dd><a href="${esc(a.url)}" target="_blank" rel="noopener">원문 기사 열기 ↗</a></dd>` : ""}</dl></div>
+    <div class="actions">
+      <button class="btn small" type="button" data-act="read" aria-pressed="${!!n.read}">${n.read ? "읽음 ✓" : "읽음 표시"}</button>
+      <button class="btn small" type="button" data-act="bookmark" aria-pressed="${!!n.bookmarked}">${n.bookmarked ? "북마크됨" : "북마크"}</button>
+      <button class="btn small" type="button" data-act="tab" data-tab="qa">질문하기</button>
+    </div>`;
+  if (rel.length) h += `<div class="box"><h4>같은 사건을 다룬 다른 매체 기사</h4><ul class="b">${rel.map((r) => `<li><button class="btn ghost small" type="button" data-act="open" data-id="${esc(r.id)}">${esc(r.outletName)} · ${esc(r.title)}</button></li>`).join("")}</ul><p class="note">제목이 비슷한 기사를 자동으로 묶었습니다. 같은 사건이 아닐 수도 있습니다.</p></div>`;
+
+  if (!hasBody(a)) h += bodyMissingBox(a);
+  else {
+    h += `<div class="box"><span class="note">${a.bodyStatus === "pasted" ? "직접 붙여 넣은 본문" : "수집기가 확보한 본문"} ${esc((a.body || "").length.toLocaleString())}자. 요약과 해설은 이 본문만 근거로 만듭니다. 원문 전문은 여기 다시 싣지 않습니다.</span>
+      ${a.bodyStatus === "pasted" && !a.demo ? `<details><summary class="note" style="cursor:pointer">붙여 넣은 본문 고치기</summary>${pasteForm(a, a.body)}</details>` : ""}</div>`;
+    h += analysisHtml(a, an);
+  }
+  h += `<div class="part-title">내 메모</div><textarea class="field" id="memo" rows="4" placeholder="이 기사에서 기억할 점, 궁금한 점을 적어 두세요." ${a.demo ? "disabled" : ""}>${esc(n.memo || "")}</textarea>
+    <div class="row" style="margin-top:6px"><button class="btn small" type="button" data-act="memo" ${a.demo ? "disabled" : ""}>메모 저장</button>${n.memoAt ? `<span class="note">저장 ${esc(kst(n.memoAt))}</span>` : ""}</div></div>`;
+  if (editing(pane)) return; // 메모·본문을 쓰는 동안에는 다시 그리지 않는다
+  pane.innerHTML = h; pane.scrollTop = y;
+}
+function editing(pane) {
+  const el = document.activeElement;
+  return !!el && pane.contains(el) && (el.tagName === "TEXTAREA" || el.tagName === "INPUT") && !el.disabled;
+}
+
+function pasteForm(a, value) {
+  return `<form class="stack" data-form="paste" data-id="${esc(a.id)}">
+    ${a.title ? "" : '<input class="field" name="title" type="text" placeholder="기사 제목" required>'}
+    <textarea class="field" name="body" rows="8" placeholder="원문 페이지에서 기사 본문을 복사해 붙여 넣으세요. (유료·회원 전용 기사는 본인이 정당하게 볼 수 있는 경우에만)" required>${esc(value || "")}</textarea>
+    <button class="btn primary" type="submit">본문 저장하고 분석 준비</button></form>`;
+}
+function bodyMissingBox(a) {
+  const why = a.bodyStatus === "pending" ? "아직 본문을 확보하지 않았습니다. 수집기가 다음에 실행될 때 시도합니다." : (a.bodyNote || "원문 페이지에서 본문을 가져오지 못했습니다.");
+  return `<div class="box no"><h4>본문 확인 불가</h4><p style="margin:0 0 8px">${esc(why)}</p>
+    <p class="note" style="margin:0 0 10px">제목만으로는 요약하지 않습니다. 원문을 열어 읽거나, 본문을 붙여 넣으면 그 내용을 근거로 요약·해설·질문을 할 수 있습니다.</p>
+    ${a.url ? `<p style="margin:0 0 6px"><a href="${esc(a.url)}" target="_blank" rel="noopener">원문 기사 열기 ↗</a></p>` : ""}
+    ${a.demo ? "" : pasteForm(a, "")}</div>`;
+}
+
+function saveBtn(kind, label, text) {
+  return `<button class="btn small ghost save" type="button" data-act="save" data-kind="${esc(kind)}" data-label="${esc(label)}" data-text="${esc(text)}">저장</button>`;
+}
+const list = (arr) => `<ul class="b">${(arr || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+
+function analysisHtml(a, an) {
+  const busy = S.busy.analysis === a.id;
+  if (!an) {
+    const err = S.aiError[a.id];
+    return `<div class="box"><h4>요약·해설 만들기</h4><p class="note" style="margin:0 0 10px">Claude가 이 기사 본문만 읽고 핵심 한 줄, 주요 사실, 주장과 근거, 쟁점을 정리합니다${isTE(a) ? ". 경제·기술 기사라 용어·배경·작동 원리·예시·의미와 한계 해설도 붙습니다" : ""}. 이용량은 내 Claude 계정에서 씁니다.</p>
+      ${S.sample ? `<button class="btn primary" type="button" data-act="analyze" ${busy ? "disabled" : ""}>${busy ? '<span class="spin"></span> 본문을 읽고 정리하는 중 (보통 30초~1분)' : "본문 근거로 요약·해설 만들기"}</button>` : `<p class="note">이 화면에서는 Claude 호출을 쓸 수 없습니다. claude.ai에서 페이지를 열어 주세요.</p>`}
+      ${err ? `<p class="note" style="color:var(--warn)">${esc(err)}</p>` : ""}</div>`;
+  }
+  const d = an.data, ex = d.explain;
+  const j = (arr) => (arr || []).join("\n");
+  let h = `<section class="sec"><div class="sec-h"><h3>핵심 한 줄</h3><span class="lab ai">AI 정리</span>${saveBtn("핵심 한 줄", a.title, d.oneLine)}</div><p class="oneline">${esc(d.oneLine)}</p></section>
+  <section class="sec"><div class="sec-h"><h3>주요 사실</h3><span class="lab fact">기사에 나온 사실</span>${saveBtn("주요 사실", a.title, j(d.facts))}</div>${list(d.facts)}</section>
+  <section class="sec"><div class="sec-h"><h3>주장과 근거</h3><span class="lab claim">인용된 사람·기관의 주장</span>${saveBtn("주장과 근거", a.title, (d.claims || []).map((c) => `${c.who}: ${c.claim} (근거: ${c.basis})`).join("\n"))}</div>
+    ${(d.claims || []).length ? d.claims.map((c) => `<div class="claim-item"><div class="who">${esc(c.who)}</div><div>${esc(c.claim)}</div><div class="basis">기사 속 근거: ${esc(c.basis)}</div></div>`).join("") : '<p class="note">기사에 인용된 주장이 없습니다.</p>'}</section>
+  <section class="sec"><div class="sec-h"><h3>더 확인할 쟁점</h3><span class="lab ai">AI 해석</span>${saveBtn("더 확인할 쟁점", a.title, j(d.issues))}</div>${list(d.issues)}</section>`;
+  if (ex) {
+    h += `<div class="part-title">${d.kind === "econ" ? "경제" : "기술"} 기사 해설 · 모두 AI 해설입니다</div>
+    <section class="sec"><div class="sec-h"><h3>① 어려운 용어</h3>${saveBtn("어려운 용어", a.title, (ex.terms || []).map((t) => `${t.term}${t.full ? ` (${t.full})` : ""}: ${t.plain}`).join("\n"))}</div>
+      <dl class="terms">${(ex.terms || []).map((t) => `<div><dt>${esc(t.term)}${t.full ? `<small>${esc(t.full)}</small>` : ""}</dt><dd>${esc(t.plain)}</dd></div>`).join("")}</dl></section>
+    <section class="sec reading"><div class="sec-h"><h3>② 배경</h3>${saveBtn("배경", a.title, ex.background)}</div>${String(ex.background || "").split(/\n+/).map((p) => `<p style="margin:0 0 10px">${esc(p)}</p>`).join("")}</section>
+    <section class="sec"><div class="sec-h"><h3>③ 작동 원리</h3>${saveBtn("작동 원리", a.title, j(ex.mechanism) + "\n" + (ex.conditions || []).map((c) => `${c.if} → ${c.then}`).join("\n"))}</div>
+      <ol class="steps reading">${(ex.mechanism || []).map((s) => `<li>${esc(s)}</li>`).join("")}</ol>
+      ${(ex.conditions || []).length ? `<div class="cond">${ex.conditions.map((c) => `<div><span class="if">조건: ${esc(c.if)}</span>→ ${esc(c.then)}</div>`).join("")}</div>` : ""}</section>
+    <section class="sec"><div class="sec-h"><h3>④ 구체적인 예시</h3>${saveBtn("구체적인 예시", a.title, (ex.examples || []).map((e) => `[${e.numbers === "article" ? "기사 수치" : "설명용 가상 숫자"}] ${e.text}`).join("\n"))}</div>
+      ${(ex.examples || []).map((e) => `<div class="ex"><span class="lab ${e.numbers === "article" ? "fact" : "ai"}">${e.numbers === "article" ? "기사 수치" : "설명용 가상 숫자"}</span><span>${esc(e.text)}</span></div>`).join("")}</section>
+    <section class="sec"><div class="sec-h"><h3>⑤ 의미와 한계</h3>${saveBtn("의미와 한계", a.title, j(ex.meaning) + "\n아직 확인되지 않은 것: " + j(ex.unverified))}</div>
+      <p class="note" style="margin:0 0 4px">${d.kind === "econ" ? "가계·기업·시장에 미칠 수 있는 영향과 그 전제" : "기존 기술과의 차이와 실제 활용"}</p>${list(ex.meaning)}
+      <p class="note" style="margin:12px 0 4px">아직 검증되지 않은 부분 · 회사 주장과 전망</p>${list(ex.unverified)}</section>`;
+  }
+  h += `<p class="note">${an.demo ? "데모 해설" : `만든 시각 ${esc(kst(an.createdAt))} · ${an.basis === "pasted" ? "붙여 넣은 본문" : "수집한 본문"} 기준`}${!a.demo && S.sample ? ` · <button class="btn ghost small" type="button" data-act="analyze" ${busy ? "disabled" : ""}>${busy ? "다시 만드는 중…" : "다시 만들기"}</button>` : ""}</p>`;
+  return h;
+}
+
+/* --- 오른쪽: 질문 */
+function renderQA() {
+  const pane = $("pane-qa"), a = getArticle(S.selected);
+  const draftEl = $("ask-input"), draft = draftEl ? draftEl.value : "", hadFocus = document.activeElement === draftEl;
+  if (!a) { pane.innerHTML = `<h2 class="pane-title">질문과 답변</h2><div class="empty">기사를 고르면 그 기사에 대해 질문할 수 있습니다. 기사마다 대화가 따로 저장됩니다.</div>`; return; }
+  const turns = getTurns(a.id), busy = S.busy.ask === a.id, canAsk = hasBody(a) && !!S.sample && !a.demo;
+  let h = `<h2 class="pane-title">질문과 답변</h2>`;
+  if (!hasBody(a)) h += `<div class="empty">본문을 확보한 기사에만 질문할 수 있습니다. 가운데 화면에서 본문을 붙여 넣어 주세요.</div>`;
+  h += `<div class="suggest">${SUGGEST.map((q) => `<button class="chip" type="button" data-act="ask" data-q="${esc(q)}" ${canAsk && !busy ? "" : "disabled"}>${esc(q)}</button>`).join("")}</div>`;
+  if (!turns.length && hasBody(a)) h += `<p class="note">답변은 세 가지로 나눠 보여 줍니다: 기사 본문에 근거한 설명, 추가 자료로 확인한 설명, AI의 추론·가정.</p>`;
+  for (const t of turns) h += turnHtml(a, t);
+  if (busy) h += `<div class="turn"><div class="q">${esc(S.busy.askQ)}</div><p class="note"><span class="spin"></span> 본문을 다시 읽고 답을 쓰는 중…</p></div>`;
+  h += `<form class="ask" id="ask-form"><textarea class="field" id="ask-input" rows="2" placeholder="${canAsk ? "이 기사에 대해 궁금한 점을 물어보세요" : a.demo ? "데모에서는 질문할 수 없습니다" : "본문이 있어야 질문할 수 있습니다"}" ${canAsk ? "" : "disabled"}></textarea>
+    <div class="row"><button class="btn primary" type="submit" ${canAsk && !busy ? "" : "disabled"}>질문하기</button>${busy ? '<button class="btn" type="button" data-act="stop">멈추기</button>' : ""}</div></form>`;
+  pane.innerHTML = h;
+  const nd = $("ask-input"); if (nd) { nd.value = draft; if (hadFocus) nd.focus(); }
+}
+
+function turnHtml(a, t) {
+  const v = [...(S.demo ? [] : S.verify.values())].find((x) => x.turnId === t.id && x.articleId === a.id);
+  let h = `<div class="turn"><div class="q">${esc(t.q)}</div><div class="q-time mono">${esc(kst(t.at))}</div>`;
+  if (t.error) return h + `<p class="note" style="color:var(--warn)">${esc(t.error)}</p></div>`;
+  const A = t.a || {};
+  const savedText = `[기사 근거]\n${(A.article || []).join("\n")}\n[AI 추론·가정]\n${(A.inference || []).join("\n")}${v?.result ? `\n[추가 자료]\n${v.result.answer}` : ""}`;
+  h += `<div class="ans">
+    <div class="part"><span class="lab fact">기사 본문에 근거한 설명</span>${(A.article || []).length ? `<ul>${A.article.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<div class="note">본문에서 답을 찾지 못했습니다.</div>'}</div>
+    <div class="part ${v?.status === "done" ? "" : "none"}"><span class="lab ext">추가 자료로 확인한 설명</span>${extHtml(t, v)}</div>
+    <div class="part"><span class="lab ai">AI의 추론 또는 가정</span>${(A.inference || []).length ? `<ul>${A.inference.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : '<div class="note">없음</div>'}</div>
+    <div class="row">${saveBtn("질문 답변", t.q, savedText)}</div></div></div>`;
+  return h;
+}
+function extHtml(t, v) {
+  const need = t.a?.verify;
+  if (v?.status === "done" && v.result) {
+    const r = v.result;
+    return `<div>${esc(r.answer)}</div>${(r.sources || []).length ? `<div class="src">${r.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)} ↗</a>`).join("")}</div>` : '<div class="note">출처를 찾지 못했습니다.</div>'}${r.limits ? `<div class="note">한계: ${esc(r.limits)}</div>` : ""}<div class="note">확인 ${esc(kst(r.checkedAt))}</div>`;
+  }
+  if (v?.status === "failed") return `<div>검색으로 확인하지 못했습니다. ${esc(v.result?.limits || "")}</div>`;
+  if (v) return `<div>검색 확인 요청을 남겼습니다 (검색어: ${esc(v.query)}). 수집기 세션이나 Claude 대화에서 처리되면 출처와 함께 여기에 나타납니다.</div>`;
+  return `<div>이 앱 화면에서는 웹 검색이 연결되어 있지 않아 추가 자료로 확인하지 않았습니다.${need?.needed ? ` 이 질문은 최신 사실 확인이 필요해 보입니다 (${esc(need.reason || "")}).` : ""}</div>
+    ${S.demo ? "" : `<button class="btn small" type="button" data-act="verify" data-turn="${esc(t.id)}" data-query="${esc(need?.query || t.q)}" style="margin-top:6px">검색 확인 요청 남기기</button>`}`;
+}
+
+/* --- 기록 */
+function renderRecords() {
+  const days = new Map();
+  const add = (iso, type, item) => { const k = dayKey(iso); if (!k) return; if (!days.has(k)) days.set(k, { read: [], qs: [], saved: [], memos: [] }); days.get(k)[type].push(item); };
+  if (!S.demo) {
+    for (const n of S.notes.values()) {
+      if (n.read && n.readAt) add(n.readAt, "read", n);
+      if (n.memo && n.memoAt) add(n.memoAt, "memos", n);
+      for (const s of n.saved || []) add(s.at, "saved", { ...s, note: n });
+    }
+    for (const [id, c] of S.chats) for (const t of c.turns || []) add(t.at, "qs", { t, articleId: id, title: c.title });
+  }
+  const keys = [...days.keys()].sort().reverse();
+  if (!S.recDay || !days.has(S.recDay)) S.recDay = keys[0] || null;
+  const titleOf = (id, fb) => getArticle(id)?.title || fb || "(삭제된 기사)";
+  const open = (id, label) => `<button class="linkish" type="button" data-act="open" data-id="${esc(id)}">${esc(label)}</button>`;
+  const d = S.recDay && days.get(S.recDay);
+  const bms = S.demo ? [] : [...S.notes.values()].filter((n) => n.bookmarked);
+  let h = `<div class="wrap"><div><h2 class="pane-title">기록과 복습</h2>
+    <p class="note" style="margin:0">읽은 기사, 질문, 저장한 해설·답변, 메모를 날짜(한국시간)별로 모았습니다. 이 기록은 내 계정의 개인 저장 공간에만 있어 다른 사람은 볼 수 없습니다.</p></div>`;
+  if (S.demo) h += `<div class="empty">데모에서는 기록을 저장하지 않습니다. 데모를 끄면 내 기록이 보입니다.</div>`;
+  else if (!keys.length) h += `<div class="empty">아직 기록이 없습니다. 기사를 읽음으로 표시하거나 질문하면 날짜별로 쌓입니다.</div>`;
+  else {
+    h += `<div class="rec-grid"><div class="days">${keys.map((k) => { const x = days.get(k); return `<button class="day" type="button" data-act="day" data-day="${k}" aria-pressed="${k === S.recDay}"><span>${esc(dayLabel(k))}</span><span class="mono note">${x.read.length + x.qs.length + x.saved.length}</span></button>`; }).join("")}</div><div>`;
+    h += `<h4>읽은 기사 ${d.read.length}</h4><div class="rec-list">${d.read.map((n) => `<div class="rec"><div class="k">${esc(n.outletName || "")} · 읽음 ${esc(kst(n.readAt))}</div>${open(n.articleId, titleOf(n.articleId, n.title))}</div>`).join("") || '<div class="note">없음</div>'}</div>`;
+    h += `<h4>질문 ${d.qs.length}</h4><div class="rec-list">${d.qs.map((q) => `<div class="rec"><div class="k">${esc(kst(q.t.at))} · ${open(q.articleId, titleOf(q.articleId, q.title))}</div><div>${esc(q.t.q)}</div></div>`).join("") || '<div class="note">없음</div>'}</div>`;
+    h += `<h4>저장한 해설·답변 ${d.saved.length}</h4><div class="rec-list">${d.saved.map((s) => `<div class="rec"><div class="k">${esc(s.kind)} · ${open(s.note.articleId, titleOf(s.note.articleId, s.note.title))}</div><div style="white-space:pre-wrap">${esc(s.text)}</div><div class="row"><button class="btn ghost small" type="button" data-act="unsave" data-id="${esc(s.note.articleId)}" data-sid="${esc(s.id)}">저장 취소</button></div></div>`).join("") || '<div class="note">없음</div>'}</div>`;
+    h += `<h4>메모 ${d.memos.length}</h4><div class="rec-list">${d.memos.map((n) => `<div class="rec"><div class="k">${open(n.articleId, titleOf(n.articleId, n.title))}</div><div style="white-space:pre-wrap">${esc(n.memo)}</div></div>`).join("") || '<div class="note">없음</div>'}</div>`;
+    h += `</div></div>`;
+  }
+  if (bms.length) h += `<div><h2 class="pane-title">북마크 ${bms.length}</h2><div class="rec-list">${bms.map((n) => `<div class="rec"><div class="k">${esc(n.outletName || "")}</div>${open(n.articleId, titleOf(n.articleId, n.title))}</div>`).join("")}</div></div>`;
+  $("records").innerHTML = h + "</div>";
+}
+
+/* --- 설정·안내 */
+function renderSetup() {
+  const s = S.settings;
+  $("setup").innerHTML = `<div class="wrap prose">
+  <h2 class="pane-title">설정·안내</h2>
+  <h3>새 기사 불러오기 연결</h3>
+  <p>이 페이지는 보안상 외부 사이트에 직접 접속할 수 없습니다. 그래서 기사 목록과 본문은 <b>수집기</b>(Claude Code 클라우드 세션에서 도는 프로그램)가 가져와 내 개인 저장소에 넣고, 이 페이지는 그것을 읽어 보여 줍니다. ‘새 기사 불러오기’는 수집기 루틴을 실행해 달라고 요청하는 버튼입니다.</p>
+  <form class="stack" id="setup-form">
+    <label for="trigger-id">수집 루틴 ID (trig_로 시작)</label>
+    <input class="field mono" id="trigger-id" type="text" value="${esc(s.triggerId || "")}" placeholder="trig_…">
+    <label class="row"><input type="checkbox" id="auto-collect" ${s.autoCollect ? "checked" : ""}> 페이지를 열 때 마지막 수집이 1시간보다 오래됐으면 자동으로 수집 요청</label>
+    <button class="btn" type="submit">설정 저장</button>
+  </form>
+  <p class="note">루틴이 실행될 때마다 내 Claude 이용량이 쓰입니다. 질문과 요약도 내 계정 이용량을 씁니다.</p>
+  <h3>기록은 어디에 저장되나요</h3>
+  <p>기사, 요약·해설, 질문 대화, 읽음·북마크, 메모, 저장한 항목은 이 아티팩트의 저장소 안 <code>data/users/내 ID/</code> 아래에 저장됩니다. 이 경로는 플랫폼이 본인만 읽고 쓸 수 있게 막아 두는 개인 영역이라, 아티팩트를 공유하더라도 다른 사람에게는 보이지 않습니다.</p>
+  <p>브라우저나 앱을 닫아도, 다른 기기에서 같은 계정으로 열어도 그대로 남습니다. 아티팩트를 삭제하면 저장소도 함께 지워집니다. 마지막으로 고른 필터 같은 화면 설정만 이 브라우저에 따로 기억합니다.</p>
+  <h3>이 화면 안에서 되는 것과 서버가 필요한 것</h3>
+  <p><b>페이지 안에서 됨:</b> 기사 목록 보기와 필터, 기사 URL 직접 추가, 본문 붙여 넣기, Claude 요약·해설과 질문(내 계정으로 호출), 기록 저장과 날짜별 조회.</p>
+  <p><b>수집기(서버)가 필요함:</b> 매체 RSS에서 목록 받기, 원문 페이지에서 본문 확보, 질문에 대한 웹 검색 확인. 매일 정해진 시각 자동 수집도 같은 수집기 루틴에 예약 시각을 붙이면 브라우저를 닫아도 돌아갑니다.</p>
+  <h3>저작권과 접근 제한</h3>
+  <p>공식 RSS로 목록을 받고, 본문은 누구나 열 수 있는 공개 페이지에서만 확보합니다. 유료·회원 전용 기사나 robots.txt가 막은 페이지는 우회하지 않고 ‘본문 확인 불가’로 둡니다. 화면에는 원문 전체를 싣지 않고 요약·해설과 원문 링크를 보여 줍니다.</p>
+  </div>`;
+}
+
+/* ------------------------------------------------------------ 동작 */
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 3200); }
+
+function openArticle(id) {
+  S.selected = id; S.view = "read"; S.tab = "article"; lsSet("selected", id);
+  render(); $("pane-article").scrollTop = 0; $("pane-qa").scrollTop = 1e9;
+  if (window.matchMedia("(max-width: 900px)").matches) window.scrollTo(0, 0);
+}
+
+function writeNote(id, patch, msg) {
+  const a = getArticle(id); const cur = getNote(id);
+  const next = { ...cur, ...patch, articleId: id, title: a?.title || cur.title || "", outletName: a?.outletName || cur.outletName || "", url: a?.url || cur.url || "" };
+  if (!S.demo) S.notes.set(id, next);
+  render();
+  return save(col("notes").doc(id), next, msg);
+}
+
+async function addManual(url, title) {
+  let norm;
+  try { norm = normalizeUrl(url); } catch { toast("주소 형식이 올바르지 않습니다."); return; }
+  const id = articleId(norm);
+  if (S.articles.has(id)) { toast("이미 목록에 있는 기사입니다."); openArticle(id); return; }
+  const outlet = outletFor(norm);
+  const doc = { id, url: norm, outlet, outletName: OUTLETS[outlet]?.name || new URL(norm).hostname, title: title || "", section: "", category: "기타",
+    publishedAt: null, collectedAt: new Date().toISOString(), source: "manual", bodyStatus: "pending", body: "", bodyNote: "직접 추가한 기사. 본문 대기 중", demo: false };
+  if (await save(col("articles").doc(id), doc, "목록에 추가했습니다.")) { S.articles.set(id, doc); openArticle(id); }
+}
+
+async function savePasted(id, body, title) {
+  const a = getArticle(id); if (!a) return;
+  body = body.trim();
+  if (body.length < 100) { toast("본문이 너무 짧습니다. 기사 본문 전체를 붙여 넣어 주세요."); return; }
+  const next = { ...a, body: body.slice(0, 30000), bodyStatus: "pasted", bodyNote: "사용자가 붙여 넣은 본문", title: a.title || title || "" };
+  if (await save(col("articles").doc(id), next, "본문을 저장했습니다.")) { S.articles.set(id, next); render(); }
+}
+
+/* --- Claude: 요약·해설 */
+function analysisPrompt(a) {
+  return `너는 경제·기술 기사를 처음 공부하는 한국어 독자를 돕는 해설자다. 아래 [기사 본문]만 근거로 삼아 JSON 하나로만 답하라.
+
+규칙
+- 본문에 없는 사실, 수치, 이름, 날짜를 만들지 않는다. facts에는 기사가 사실로 서술한 것만 쓴다.
+- 인용된 사람·기관의 말은 facts가 아니라 claims에 넣는다. 기업의 홍보성 주장이나 전망은 확정된 사실처럼 쓰지 않는다.
+- 개조식으로 짧게 쓴다. 문장은 쉬운 한국어로. 어려운 용어를 또 다른 어려운 용어로 설명하지 않는다.
+- 약어는 원래 표현과 뜻을 함께 쓴다.
+- 기사 분야 참고: ${a.category || "알 수 없음"} / 매체: ${a.outletName}
+
+형식
+{
+ "kind": "econ" | "tech" | "general",   // 경제 기사면 econ, 기술·과학·AI 기사면 tech, 그 밖은 general
+ "oneLine": "핵심 한 줄",
+ "facts": ["주요 사실 3~5개"],
+ "claims": [{"who": "말한 사람·기관", "claim": "주장", "basis": "기사에 제시된 근거. 없으면 '기사에 근거 제시 없음'"}],
+ "issues": ["더 확인할 쟁점 2~4개"],
+ "explain": null 또는 {   // kind가 econ이나 tech일 때만 채운다
+   "terms": [{"term": "용어", "full": "약어면 원래 표현(영문 포함), 아니면 빈 문자열", "plain": "쉬운 설명 1~2문장"}],  // 3~5개
+   "background": "이 기사를 이해하는 데 필요한 이전 상황과 기본 개념. 짧은 문단 1~2개(문단 사이는 \\n)",
+   "mechanism": ["왜 이런 변화가 생겼는지 단계별로. 중간 과정을 건너뛰지 말고 원인→결과로 3~6단계"],
+   "conditions": [{"if": "조건", "then": "그때의 결과"}],   // 조건에 따라 결과가 달라지는 부분 1~3개
+   "examples": [{"text": "일상생활이나 간단한 숫자로 든 예", "numbers": "article" | "illustrative"}],  // 기사에 나온 실제 수치를 쓰면 article, 설명용으로 지어낸 숫자면 illustrative. 2~3개
+   "meaning": ["tech면 기존 기술과의 차이·실제 활용, econ이면 가계·기업·시장에 미칠 수 있는 영향과 그 전제"],
+   "unverified": ["아직 검증되지 않은 부분, 회사 주장·전망이라 확인이 필요한 것"]
+ }
+}
+
+[기사 제목]
+${a.title}
+
+[기사 본문]
+${(a.body || "").slice(0, BODY_FOR_AI)}`;
+}
+function validAnalysis(d) {
+  if (!d || typeof d !== "object" || typeof d.oneLine !== "string" || !Array.isArray(d.facts)) return null;
+  const arr = (x) => Array.isArray(x) ? x.map(String) : [];
+  const out = { kind: ["econ", "tech", "general"].includes(d.kind) ? d.kind : "general", oneLine: d.oneLine, facts: arr(d.facts),
+    claims: Array.isArray(d.claims) ? d.claims.filter((c) => c && c.claim).map((c) => ({ who: String(c.who || "출처 불명"), claim: String(c.claim), basis: String(c.basis || "기사에 근거 제시 없음") })) : [],
+    issues: arr(d.issues), explain: null };
+  const e = d.explain;
+  if (e && typeof e === "object" && out.kind !== "general") out.explain = {
+    terms: Array.isArray(e.terms) ? e.terms.filter((t) => t && t.term).map((t) => ({ term: String(t.term), full: String(t.full || ""), plain: String(t.plain || "") })) : [],
+    background: String(e.background || ""), mechanism: arr(e.mechanism),
+    conditions: Array.isArray(e.conditions) ? e.conditions.filter((c) => c && c.if).map((c) => ({ if: String(c.if), then: String(c.then || "") })) : [],
+    examples: Array.isArray(e.examples) ? e.examples.filter((x) => x && x.text).map((x) => ({ text: String(x.text), numbers: x.numbers === "article" ? "article" : "illustrative" })) : [],
+    meaning: arr(e.meaning), unverified: arr(e.unverified) };
+  return out;
+}
+const AI_ERR = { not_granted: "Claude 사용을 허락하지 않아 만들 수 없습니다. 페이지를 다시 열면 다시 물어봅니다.", rate_limited: "요청이 많거나 이용 한도에 닿았습니다. 잠시 뒤 다시 눌러 주세요.", sampling_disabled: "이 계정에서는 Claude 호출을 쓸 수 없습니다.", session_expired: "로그인이 만료됐습니다. 다시 로그인해 주세요.", prompt_too_large: "본문이 너무 깁니다.", invalid_json: "답을 정리하는 형식이 맞지 않았습니다. 다시 눌러 주세요.", refused: "Claude가 이 내용에 답하지 않았습니다.", cancelled: "멈췄습니다." };
+const aiErr = (e) => AI_ERR[e && e.code] || "일시적인 오류로 만들지 못했습니다. 다시 눌러 주세요.";
+
+async function analyze(id) {
+  const a = getArticle(id); if (!a || !hasBody(a) || !S.sample || S.busy.analysis) return;
+  S.busy.analysis = id; delete S.aiError[id]; render();
+  try {
+    const raw = await S.sample.json(analysisPrompt(a), { cache: false });
+    const data = validAnalysis(raw);
+    if (!data) throw { code: "invalid_json" };
+    const doc = { articleId: id, title: a.title, data, createdAt: new Date().toISOString(), basis: a.bodyStatus === "pasted" ? "pasted" : "body", bodyChars: a.body.length };
+    S.analyses.set(id, doc);
+    await save(col("analyses").doc(id), doc);
+  } catch (e) { S.aiError[id] = aiErr(e); }
+  S.busy.analysis = null; render();
+}
+
+/* --- Claude: 질문 */
+let askCtl = null;
+function askPrompt(a, turns, q) {
+  const an = getAnalysis(a.id)?.data;
+  const hist = turns.slice(-5).map((t) => `Q: ${t.q}\nA(기사 근거): ${(t.a?.article || []).join(" / ")}\nA(AI 추론): ${(t.a?.inference || []).join(" / ")}`).join("\n\n");
+  return `너는 기사를 공부하는 초보 독자의 질문에 답하는 해설자다. 아래 기사 본문을 근거로 답하고 JSON 하나로만 답하라.
+
+규칙
+- "article": 기사 본문에 실제로 있는 내용에 근거한 설명만. 본문에 없으면 빈 배열.
+- "inference": 너의 추론, 가정, 일반 지식에 기댄 설명. 각 항목이 왜 추론인지 드러나게 쓴다(예: "~라면", "일반적으로").
+- 너는 지금 웹 검색을 할 수 없다. 최신 사실·현재 수치·기사 이후 상황처럼 확인이 필요한 내용은 지어내지 말고 verify.needed를 true로, 검색어와 이유를 적는다. 출처 링크나 수치를 만들어 내지 않는다.
+- 쉬운 한국어, 짧은 개조식. 어려운 용어를 또 다른 어려운 용어로 설명하지 않는다. 설명용 가상 숫자를 쓰면 "가상 숫자"라고 밝힌다.
+
+형식
+{"article": ["..."], "inference": ["..."], "verify": {"needed": true|false, "query": "검색어", "reason": "왜 확인이 필요한지"}}
+
+[기사 제목] ${a.title}
+[매체] ${a.outletName} · 발행 ${a.publishedAt ? kst(a.publishedAt) : "알 수 없음"}
+${an ? `[이미 만든 핵심 한 줄] ${an.oneLine}\n` : ""}[기사 본문]
+${(a.body || "").slice(0, BODY_FOR_AI)}
+
+${hist ? `[이 기사에 대한 이전 질문과 답]\n${hist}\n\n` : ""}[새 질문]
+${q}`;
+}
+async function ask(q) {
+  const a = getArticle(S.selected);
+  q = (q || "").trim();
+  if (!a || !q || !hasBody(a) || !S.sample || S.busy.ask || a.demo) return;
+  const id = a.id, turns = getTurns(id).slice();
+  S.busy.ask = id; S.busy.askQ = q; askCtl = new AbortController(); render();
+  const turn = { id: "t" + Date.now().toString(36), q, at: new Date().toISOString() };
+  try {
+    const raw = await S.sample.json(askPrompt(a, turns, q), { cache: false, signal: askCtl.signal });
+    const arr = (x) => Array.isArray(x) ? x.map(String).filter(Boolean) : [];
+    turn.a = { article: arr(raw?.article), inference: arr(raw?.inference), verify: { needed: !!raw?.verify?.needed, query: String(raw?.verify?.query || ""), reason: String(raw?.verify?.reason || "") } };
+  } catch (e) {
+    if (e && e.code === "cancelled") { S.busy.ask = null; render(); return; }
+    turn.error = aiErr(e);
+  }
+  S.busy.ask = null;
+  if (!turn.error) { const inp = $("ask-input"); if (inp) inp.value = ""; }
+  const next = [...turns, turn].slice(-80);
+  S.chats.set(id, { articleId: id, title: a.title, turns: next });
+  render(); $("pane-qa").scrollTop = 1e9;
+  await save(col("chats").doc(id), { articleId: id, title: a.title, turns: next });
+}
+
+async function requestVerify(turnId, query) {
+  const a = getArticle(S.selected); if (!a) return;
+  const t = getTurns(a.id).find((x) => x.id === turnId); if (!t) return;
+  const id = "v" + Date.now().toString(36);
+  const doc = { id, articleId: a.id, articleTitle: a.title, articleUrl: a.url, turnId, question: t.q, query, status: "pending", createdAt: new Date().toISOString() };
+  S.verify.set(id, doc); render();
+  if (await save(col("verify").doc(id), doc, "검색 확인 요청을 남겼습니다.")) fireCollector("verify");
+}
+
+/* --- 새 기사 불러오기 = 수집 루틴 실행 요청 */
+async function fireCollector(reason) {
+  const tid = (S.settings.triggerId || "").trim();
+  if (!tid) {
+    if (reason === "manual") { S.refreshMsg = "수집기가 아직 연결되지 않았습니다. 설정·안내를 확인하세요."; render(); }
+    return false;
+  }
+  if (!S.mcp) { S.refreshMsg = "이 화면에서는 수집 요청을 보낼 수 없습니다 (Claude Code Remote 연결 필요)."; render(); return false; }
+  S.busy.refresh = true; render();
+  try {
+    await S.mcp.callTool(TRIGGER_SERVER, "fire_trigger", { trigger_id: tid, text: JSON.stringify({ reason, hours: S.settings.hours, perOutlet: S.settings.perOutlet }) }, { cache: false });
+    lsSet("lastFire", Date.now());
+    S.refreshMsg = reason === "verify" ? "검색 확인을 요청했습니다." : "수집을 요청했습니다. 보통 몇 분 뒤 목록이 저절로 바뀝니다.";
+  } catch (e) {
+    S.refreshMsg = "수집 요청 실패: " + (e && (e.code === "not_granted" || e.code === "server_not_connected") ? "Claude Code Remote 사용 허락이 필요합니다." : (e && e.code) || "오류");
+  }
+  S.busy.refresh = false; render();
+  return true;
+}
+let autoTried = false;
+function maybeAutoCollect() {
+  if (autoTried || S.demo || !S.loaded.status || !S.loaded.settings || !S.settings.autoCollect || !S.settings.triggerId) return;
+  autoTried = true;
+  const last = S.status?.lastRunAt ? new Date(S.status.lastRunAt).getTime() : 0;
+  if (Date.now() - last < 3600e3 || Date.now() - lsGet("lastFire", 0) < 15 * 60e3) return;
+  fireCollector("open");
+}
+
+/* ------------------------------------------------------------ 이벤트 */
+document.addEventListener("click", (ev) => {
+  const el = ev.target.closest("[data-act]"); if (!el) return;
+  const act = el.dataset.act, a = getArticle(S.selected);
+  if (act === "open") openArticle(el.dataset.id);
+  else if (act === "filter") { S.filters[el.dataset.group] = el.dataset.val; lsSet("filters", S.filters); render(); }
+  else if (act === "toggle") { S.filters[el.dataset.group] = !S.filters[el.dataset.group]; lsSet("filters", S.filters); render(); }
+  else if (act === "tab") { S.tab = el.dataset.tab; render(); }
+  else if (act === "read" && a) writeNote(a.id, getNote(a.id).read ? { read: false, readAt: null } : { read: true, readAt: new Date().toISOString() });
+  else if (act === "bookmark" && a) writeNote(a.id, { bookmarked: !getNote(a.id).bookmarked });
+  else if (act === "memo" && a) writeNote(a.id, { memo: $("memo").value, memoAt: new Date().toISOString() }, "메모를 저장했습니다.");
+  else if (act === "save" && a) {
+    const n = getNote(a.id);
+    writeNote(a.id, { saved: [...(n.saved || []), { id: "s" + Date.now().toString(36), kind: el.dataset.kind, label: el.dataset.label, text: el.dataset.text, at: new Date().toISOString() }] }, "기록에 저장했습니다.");
+  }
+  else if (act === "unsave") { const n = getNote(el.dataset.id); writeNote(el.dataset.id, { saved: (n.saved || []).filter((s) => s.id !== el.dataset.sid) }, "저장을 취소했습니다."); }
+  else if (act === "analyze" && a) analyze(a.id);
+  else if (act === "ask") ask(el.dataset.q);
+  else if (act === "stop") askCtl?.abort();
+  else if (act === "verify") requestVerify(el.dataset.turn, el.dataset.query);
+  else if (act === "day") { S.recDay = el.dataset.day; render(); }
+});
+document.addEventListener("submit", (ev) => {
+  const f = ev.target; ev.preventDefault();
+  if (f.id === "add-form") { addManual($("add-url").value, $("add-title").value.trim()); }
+  else if (f.dataset.form === "paste") savePasted(f.dataset.id, f.elements.body.value, f.elements.title ? f.elements.title.value.trim() : "");
+  else if (f.id === "ask-form") ask($("ask-input").value);
+  else if (f.id === "setup-form") {
+    S.settings = { ...S.settings, triggerId: $("trigger-id").value.trim(), autoCollect: $("auto-collect").checked };
+    if (S.db && S.uid) save(S.db.doc(base() + "/settings"), S.settings, "설정을 저장했습니다.");
+    else toast("저장소에 연결되지 않아 저장하지 못했습니다.");
+  }
+});
+document.addEventListener("change", (ev) => {
+  const t = ev.target;
+  if (t.id === "sel-hours" || t.id === "sel-count") {
+    S.settings = { ...S.settings, [t.id === "sel-hours" ? "hours" : "perOutlet"]: Number(t.value) };
+    render();
+    if (!S.demo && S.db && S.uid) save(S.db.doc(base() + "/settings"), S.settings);
+  }
+});
+document.addEventListener("toggle", (ev) => { if (ev.target.id === "add-box") lsSet("addOpen", ev.target.open); }, true);
+document.addEventListener("keydown", (ev) => { if (ev.target.id === "ask-input" && ev.key === "Enter" && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); ask(ev.target.value); } });
+$("btn-refresh").onclick = () => fireCollector("manual");
+$("btn-view-read").onclick = () => { S.view = "read"; render(); };
+$("btn-view-rec").onclick = () => { S.view = "rec"; render(); };
+$("btn-setup").onclick = () => { S.view = S.view === "setup" ? "read" : "setup"; render(); };
+$("btn-demo").onclick = () => { S.demo = !S.demo; S.selected = S.demo ? DEMO.article.id : lsGet("selected", null); S.tab = S.demo ? "article" : "list"; S.view = "read"; render(); };
+for (const b of $("tabbar").querySelectorAll("button")) b.onclick = () => { if (b.dataset.tab === "rec") S.view = "rec"; else { S.view = "read"; S.tab = b.dataset.tab; } render(); window.scrollTo(0, 0); };
+
+/* ------------------------------------------------------------ 시작 */
+S.filters = { ...S.filters, ...lsGet("filters", {}) };
+S.selected = lsGet("selected", null);
+render();
+(async () => {
+  if (!window.claude || !window.claude.use) { S.ready = true; render(); return; }
+  const [db, user, sample, mcp] = await Promise.all(["db", "user", "sample", "mcp"].map((n) => window.claude.use(n).catch(() => null)));
+  S.user = user; S.sample = sample; S.mcp = mcp;
+  S.uid = user ? await user.id().catch(() => null) : null;
+  S.db = db && S.uid ? db : null;
+  S.ready = true;
+  if (S.db) subscribe();
+  render();
+})();
+setInterval(() => { if (!document.hidden) renderTop(); }, 60e3);
+})();
+</script>
