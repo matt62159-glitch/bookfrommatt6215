@@ -1,0 +1,1488 @@
+<title>강의 PPT 해설 도우미</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+/* 레이아웃: 위쪽 단계 바 + (왼쪽 원본 슬라이드 | 오른쪽 해설 목록) 2단 작업대. 휴대폰에서는 1단으로 쌓임. */
+:root{
+  --bg:#f3f5f6; --panel:#ffffff; --ink:#18222b; --muted:#5c6b76; --line:#d9e0e4;
+  --teal:#0b6e7a; --teal-soft:#e2f0f2; --hl:#f6e45a; --hl-soft:#fdf8d3; --hl-ink:#6b5600;
+  --ok:#1f7a45; --warn:#a65d00; --bad:#b3261e; --warn-soft:#fff1dc; --bad-soft:#fde8e6;
+  --font-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  --font-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11181d; --panel:#18222a; --ink:#e4ebef; --muted:#93a3ad; --line:#2c3a44;
+  --teal:#5cc3cf; --teal-soft:#16343a; --hl:#e9d44a; --hl-soft:#2f2b10; --hl-ink:#f1df6e;
+  --ok:#5fcf8b; --warn:#f0a94a; --bad:#ff8a80; --warn-soft:#33260f; --bad-soft:#3a1d1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11181d; --panel:#18222a; --ink:#e4ebef; --muted:#93a3ad; --line:#2c3a44;
+  --teal:#5cc3cf; --teal-soft:#16343a; --hl:#e9d44a; --hl-soft:#2f2b10; --hl-ink:#f1df6e;
+  --ok:#5fcf8b; --warn:#f0a94a; --bad:#ff8a80; --warn-soft:#33260f; --bad-soft:#3a1d1b; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font:15px/1.6 var(--font-ui);padding:0 16px 48px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px;padding-block:14px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.brand{font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px}
+.brand i{display:inline-block;width:14px;height:14px;background:var(--hl);border-radius:2px;transform:skewX(-12deg)}
+.steps{display:flex;gap:4px;flex-wrap:wrap}
+.steps button{border:1px solid transparent;background:none;padding:5px 12px;border-radius:999px;color:var(--muted);cursor:pointer;font-size:14px}
+.steps button[aria-current="step"]{background:var(--teal-soft);color:var(--teal);font-weight:600}
+.steps button:disabled{opacity:.45;cursor:default}
+.fileinfo{margin-left:auto;font-size:13px;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel);padding:7px 14px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1.3}
+.btn:hover{border-color:var(--teal)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:var(--panel);font-weight:600}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{border-color:transparent;background:none;color:var(--teal)}
+
+/* 업로드 */
+.up{max-width:980px;margin:0 auto;display:grid;gap:20px}
+.drop{border:2px dashed var(--line);border-radius:12px;background:var(--panel);padding:36px 20px;text-align:center;display:grid;gap:10px;justify-items:center;cursor:pointer}
+.drop.over{border-color:var(--teal);background:var(--teal-soft)}
+.drop h1{font-size:24px}
+.drop p{margin:0;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0}
+.card h2{font-size:16px;margin-bottom:10px}
+.flow{margin:0;padding-left:20px;display:grid;gap:6px}
+.caps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.caps li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:14px}
+.caps .st{font-weight:700;text-align:center}
+.st.ok{color:var(--ok)} .st.no{color:var(--bad)} .st.part{color:var(--warn)} .st.wait{color:var(--muted)}
+.caps small{display:block;color:var(--muted)}
+.errbox{background:var(--bad-soft);color:var(--bad);border-radius:6px;padding:10px 14px}
+
+/* 검토 */
+.rvbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{border-color:var(--teal);color:var(--teal);font-weight:600;box-shadow:inset 0 -2px 0 var(--teal)}
+.tab:disabled{opacity:.4;cursor:default}
+.tab .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.tab .dot.done{background:var(--ok)} .tab .dot.cur{background:var(--hl)}
+.progress{font-size:13px;color:var(--muted)}
+.progress b{color:var(--ink);font-weight:600}
+.rvbar .grow{flex:1}
+
+.rv{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.rv{grid-template-columns:minmax(0,1fr)}}
+.left{position:sticky;top:env(safe-area-inset-top,0px);display:grid;gap:12px;min-width:0}
+@media (max-width:900px){.left{position:static}}
+.thumbs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.thumb{border:2px solid transparent;border-radius:6px;padding:0;background:none;cursor:pointer;flex:0 0 auto;display:grid;gap:3px;text-align:left}
+.thumb[aria-selected="true"]{border-color:var(--teal)}
+.thumb .lbl{font-size:12px;color:var(--muted);padding:0 4px 3px;display:flex;justify-content:space-between;gap:6px}
+.thumb .lbl .n{font-weight:600;color:var(--ink)}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px;min-width:0}
+.stage .cap{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.04em;padding:1px 7px;border-radius:4px;border:1px solid currentColor}
+.tag.orig{color:var(--muted)}
+.tag.ai{color:var(--teal)}
+details.src{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px;font-size:13px}
+details.src summary{cursor:pointer;color:var(--muted)}
+details.src pre{white-space:pre-wrap;font:inherit;margin:8px 0 0;max-height:260px;overflow:auto}
+
+.right{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;min-width:0;display:grid;gap:12px}
+.ph-head{display:grid;gap:4px}
+.ph-head .eyebrow{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.ph-head h2{font-size:18px}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.note{font-size:13px;color:var(--muted);background:var(--bg);border-radius:6px;padding:8px 12px}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.group h3{font-size:13px;color:var(--muted);font-weight:600;margin:6px 0;letter-spacing:.04em}
+.items{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:8px 10px;border:1px solid var(--line);border-radius:6px;padding:10px 12px;align-items:start}
+.item.sel{background:var(--hl-soft);border-color:var(--hl)}
+.item input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:var(--teal)}
+.it-title{font-weight:600}
+.it-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.it-flags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.flag{font-size:11px;padding:0 6px;border-radius:4px;background:var(--bg);color:var(--muted)}
+.flag.edit{background:var(--teal-soft);color:var(--teal)}
+.flag.unc{background:var(--warn-soft);color:var(--warn)}
+.edit-area{display:grid;gap:6px;margin-top:6px}
+.edit-area input,.edit-area textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel)}
+.edit-area textarea{min-height:84px;resize:vertical}
+.loading{display:flex;gap:10px;align-items:center;color:var(--muted)}
+.spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--teal);border-radius:50%;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* 슬라이드 렌더러 */
+.slide{position:relative;overflow:hidden;background:#fff;box-shadow:0 0 0 1px var(--line)}
+.slide .shp{position:absolute;overflow:visible}
+.slide .shp img{width:100%;height:100%;display:block;max-width:none}
+.slide .tbw{position:absolute;inset:0;display:flex;flex-direction:column}
+.slide .ph-box{position:absolute;inset:0;border:1px dashed #9aa7b0;display:flex;align-items:center;justify-content:center;color:#5c6b76;font-size:11px;background:rgba(150,160,170,.08);text-align:center;padding:2px}
+.slide table{border-collapse:collapse;width:100%;height:100%;table-layout:fixed}
+.slide td{border:1px solid #9aa7b0;vertical-align:top;overflow:hidden}
+.slide .newbox{outline:2px solid rgba(214,170,0,.0)}
+.slide.mark .newbox{outline:2px dashed #d4a800;outline-offset:1px}
+.tp{margin:0;white-space:pre-wrap;word-break:normal;overflow-wrap:anywhere}
+.tp .bu{display:inline-block}
+#measure{position:absolute;left:-20000px;top:0;visibility:hidden;pointer-events:none}
+#measure>div{display:flow-root}
+
+/* 반영·다운로드 */
+.out{display:grid;gap:18px}
+.opts{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center}
+.opts fieldset{border:0;padding:0;margin:0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.opts legend{float:left;margin-right:10px;font-weight:600;font-size:14px}
+.tablewrap{overflow-x:auto}
+table.plan{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+.plan th,.plan td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
+.plan th{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+.plan ul{margin:0;padding-left:18px}
+.pl{display:grid;gap:3px}
+.pl .k{font-weight:600}
+.pl .warn{color:var(--warn)}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px}
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:grid;gap:8px;min-width:0}
+.rcard.supp{border-color:var(--hl)}
+.rcard .cap{display:flex;justify-content:space-between;gap:8px;font-size:13px;flex-wrap:wrap}
+.rcard .ok{color:var(--ok);font-size:13px}
+.rcard ul.w{margin:0;padding-left:18px;color:var(--warn);font-size:13px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.summary{font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;max-width:min(90vw,520px);z-index:10}
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="brand"><i aria-hidden="true"></i>강의 PPT 해설 도우미</div>
+    <nav class="steps" aria-label="단계">
+      <button id="st-upload" type="button">1 파일 올리기</button>
+      <button id="st-review" type="button" disabled>2 페이지별 검토</button>
+      <button id="st-output" type="button" disabled>3 반영·다운로드</button>
+    </nav>
+    <div class="fileinfo" id="fileinfo"></div>
+  </header>
+
+  <section id="v-upload" class="up">
+    <label class="drop" id="drop" for="file">
+      <h1>강의 PPT를 올려 주세요</h1>
+      <p>.pptx 파일을 끌어다 놓거나 눌러서 고르세요. 원본 파일은 바뀌지 않고, 결과는 새 파일로 만들어집니다.</p>
+      <span class="btn primary">PPTX 파일 고르기</span>
+      <input id="file" type="file" accept=".pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
+    </label>
+    <div id="uperr" class="errbox" hidden></div>
+    <div class="cols">
+      <div class="card">
+        <h2>진행 순서</h2>
+        <ol class="flow">
+          <li>PPTX를 올리면 전체 페이지 수와 순서를 읽습니다.</li>
+          <li>1~5페이지부터 페이지마다 따로 보충 설명을 만듭니다.</li>
+          <li>필요한 항목만 체크하고 문장을 고칩니다. 검토를 마치면 다음 5페이지로 넘어갑니다.</li>
+          <li>배치 계획을 확인하고 결과 PPTX를 만듭니다. 원본 여백에 넣고, 모자라면 바로 뒤에 보충 슬라이드를 끼웁니다.</li>
+          <li>실제 결과 파일을 다시 읽어 그린 미리보기로 잘림·겹침을 확인한 뒤 내려받습니다.</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h2>이 화면에서 쓸 수 있는 기능</h2>
+        <ul class="caps" id="caps"></ul>
+      </div>
+    </div>
+    <div class="card">
+      <h2>구형 .ppt 파일이라면</h2>
+      <p style="margin:0">PowerPoint에서 파일을 열고 <b>파일 → 다른 이름으로 저장 → 파일 형식: PowerPoint 프레젠테이션(*.pptx)</b>으로 저장한 다음 그 .pptx 파일을 올려 주세요. Google 슬라이드라면 <b>파일 → 다운로드 → Microsoft PowerPoint(.pptx)</b>를 쓰면 됩니다.</p>
+    </div>
+  </section>
+
+  <section id="v-review" hidden>
+    <div class="rvbar">
+      <div class="tabs" id="btabs" role="tablist" aria-label="5페이지 묶음"></div>
+      <div class="progress" id="progress"></div>
+      <div class="grow"></div>
+      <button class="btn primary" id="next" type="button"></button>
+    </div>
+    <div class="rv">
+      <div class="left">
+        <div class="thumbs" id="thumbs" role="tablist" aria-label="현재 묶음의 페이지"></div>
+        <div class="stage" id="stage"></div>
+        <details class="src" id="srcbox"><summary>원본 슬라이드에서 읽은 글자 보기</summary><pre id="srctext"></pre></details>
+      </div>
+      <div class="right" id="panel"></div>
+    </div>
+  </section>
+
+  <section id="v-output" class="out" hidden>
+    <div class="card">
+      <div class="opts">
+        <fieldset>
+          <legend>배치 방식</legend>
+          <label><input type="radio" name="mode" id="mode-auto" value="auto"> 원본 여백 먼저, 모자라면 보충 슬라이드</label>
+          <label><input type="radio" name="mode" id="mode-supp" value="supp"> 모두 보충 슬라이드에</label>
+        </fieldset>
+        <label>보충 설명 글자 크기
+          <select id="boxsz"><option value="20">20pt</option><option value="22">22pt</option><option value="24">24pt</option></select>
+        </label>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="font-size:16px;margin-bottom:6px">반영 전 확인: 선택한 설명과 넣을 위치</h2>
+      <p class="summary" id="plansum"></p>
+      <div class="tablewrap"><table class="plan" id="plan"></table></div>
+      <div class="bar" style="margin-top:14px">
+        <button class="btn primary" id="build" type="button">결과 PPTX 만들기</button>
+        <span class="progress" id="buildmsg"></span>
+      </div>
+    </div>
+    <div id="resultwrap" class="out" hidden>
+      <div class="bar">
+        <h2 style="font-size:16px">결과 미리보기</h2>
+        <span class="progress" id="ressum"></span>
+        <div class="grow" style="flex:1"></div>
+        <button class="btn primary" id="download" type="button">PPTX 내려받기</button>
+      </div>
+      <p class="note">아래 화면은 방금 만든 결과 PPTX 파일을 다시 열어 그린 것입니다. 노란 점선은 새로 넣은 설명 상자입니다. 글꼴은 브라우저 글꼴로 그려서 PowerPoint와 줄바꿈이 조금 다를 수 있어, 배치 계산에는 여유 공간을 두었습니다.</p>
+      <div class="results" id="results"></div>
+    </div>
+  </section>
+</div>
+<div id="measure" aria-hidden="true"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+"use strict";
+/* ========================= 공통 도우미 ========================= */
+const $ = s => document.querySelector(s);
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})){
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat(Infinity)){
+    if (c == null || c === false) continue;
+    el.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+let toastTimer;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true, 4200); }
+function useCap(name){
+  try { return window.claude && window.claude.use ? Promise.resolve(window.claude.use(name)).catch(()=>null) : Promise.resolve(null); }
+  catch { return Promise.resolve(null); }
+}
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ========================= OOXML 읽기 ========================= */
+const NS = {
+  a:'http://schemas.openxmlformats.org/drawingml/2006/main',
+  p:'http://schemas.openxmlformats.org/presentationml/2006/main',
+  r:'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+  c:'http://schemas.openxmlformats.org/drawingml/2006/chart',
+  mc:'http://schemas.openxmlformats.org/markup-compatibility/2006',
+  pr:'http://schemas.openxmlformats.org/package/2006/relationships',
+  ct:'http://schemas.openxmlformats.org/package/2006/content-types'
+};
+const EMU_PT = 12700;
+function kid(el, qn){ if (!el) return null; const i=qn.indexOf(':'); const ns=NS[qn.slice(0,i)], n=qn.slice(i+1);
+  for (const c of el.children) if (c.localName===n && c.namespaceURI===ns) return c; return null; }
+function kidsOf(el, qn){ if (!el) return []; const i=qn.indexOf(':'); const ns=NS[qn.slice(0,i)], n=qn.slice(i+1);
+  return [...el.children].filter(c=>c.localName===n && c.namespaceURI===ns); }
+function q(el, path){ for (const s of path.split('/')){ el = kid(el, s); if (!el) return null; } return el; }
+function desc(el, qn){ if (!el) return []; const i=qn.indexOf(':'); return [...el.getElementsByTagNameNS(NS[qn.slice(0,i)], qn.slice(i+1))]; }
+function num(el, attr, def){ const v = el && el.getAttribute(attr); return v==null || v==='' ? def : +v; }
+function resolvePart(from, target){
+  if (target.startsWith('/')) return target.slice(1);
+  const parts = from.split('/'); parts.pop();
+  for (const seg of target.split('/')){ if (seg==='..') parts.pop(); else if (seg && seg!=='.') parts.push(seg); }
+  return parts.join('/');
+}
+function relsPath(path){ const i=path.lastIndexOf('/'); return path.slice(0,i)+'/_rels/'+path.slice(i+1)+'.rels'; }
+class Pkg {
+  constructor(zip){ this.zip=zip; this.cache=new Map(); }
+  async xml(path){
+    if (this.cache.has(path)) return this.cache.get(path);
+    const f = this.zip.file(path); let d = null;
+    if (f){ d = new DOMParser().parseFromString(await f.async('string'), 'application/xml'); if (d.getElementsByTagName('parsererror').length) d = null; }
+    this.cache.set(path, d); return d;
+  }
+  async rels(path){
+    const d = await this.xml(relsPath(path)); const m = {};
+    if (!d) return m;
+    for (const r of d.documentElement.children){
+      const ext = r.getAttribute('TargetMode')==='External', t = r.getAttribute('Target')||'';
+      m[r.getAttribute('Id')] = { type:r.getAttribute('Type')||'', target: ext ? t : resolvePart(path, t), external: ext };
+    }
+    return m;
+  }
+}
+const relOfType = (rels, suffix) => Object.values(rels).find(r => r.type.endsWith('/'+suffix));
+function serialize(doc){
+  const s = new XMLSerializer().serializeToString(doc).replace(/^<\?xml[^>]*\?>\s*/, '');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' + s;
+}
+
+function parseTheme(doc){
+  const t = { colors:{}, major:{latin:'',ea:''}, minor:{latin:'',ea:''} };
+  if (!doc) return t;
+  const cs = desc(doc, 'a:clrScheme')[0];
+  if (cs) for (const c of cs.children){ const v=c.firstElementChild; if (v) t.colors[c.localName] = v.localName==='srgbClr' ? v.getAttribute('val') : (v.getAttribute('lastClr')||'000000'); }
+  const fs = desc(doc, 'a:fontScheme')[0];
+  for (const [k, n] of [['major','a:majorFont'],['minor','a:minorFont']]){
+    const f = kid(fs, n); if (!f) continue;
+    const hang = kidsOf(f, 'a:font').find(x=>x.getAttribute('script')==='Hang');
+    t[k] = { latin: kid(f,'a:latin')?.getAttribute('typeface')||'', ea: kid(f,'a:ea')?.getAttribute('typeface') || hang?.getAttribute('typeface') || '' };
+  }
+  return t;
+}
+const PRST = {black:'000000',white:'FFFFFF',red:'FF0000',green:'008000',blue:'0000FF',yellow:'FFFF00',gray:'808080',grey:'808080'};
+function hexToRgb(h){ return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function rgbToHsl([r,g,b]){ r/=255; g/=255; b/=255; const mx=Math.max(r,g,b), mn=Math.min(r,g,b); let hh=0, s=0; const l=(mx+mn)/2;
+  if (mx!==mn){ const d=mx-mn; s = l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    hh = mx===r ? (g-b)/d+(g<b?6:0) : mx===g ? (b-r)/d+2 : (r-g)/d+4; hh/=6; } return [hh,s,l]; }
+function hslToRgb([hh,s,l]){ if (s===0) return [l*255,l*255,l*255]; const f=(p,q2,t)=>{ if(t<0)t+=1; if(t>1)t-=1; if(t<1/6) return p+(q2-p)*6*t; if(t<1/2) return q2; if(t<2/3) return p+(q2-p)*(2/3-t)*6; return p; };
+  const q2 = l<0.5 ? l*(1+s) : l+s-l*s, p=2*l-q2; return [f(p,q2,hh+1/3)*255, f(p,q2,hh)*255, f(p,q2,hh-1/3)*255]; }
+function colorOf(c, ctx){ // c: a color element (srgbClr / schemeClr ...)
+  if (!c) return null; let hex = null;
+  switch (c.localName){
+    case 'srgbClr': hex = c.getAttribute('val'); break;
+    case 'schemeClr': { let v=c.getAttribute('val'); if (v==='phClr') v='tx1'; const m = ctx.clrMap[v] || v; hex = ctx.theme.colors[m] || null; break; }
+    case 'sysClr': hex = c.getAttribute('lastClr') || '000000'; break;
+    case 'prstClr': hex = PRST[c.getAttribute('val')] || '000000'; break;
+  }
+  if (!hex || hex.length!==6) return null;
+  let rgb = hexToRgb(hex), alpha = 1;
+  const lm = kid(c,'a:lumMod'), lo = kid(c,'a:lumOff');
+  if (lm || lo){ const hsl = rgbToHsl(rgb); hsl[2] = Math.min(1, Math.max(0, hsl[2]*num(lm,'val',100000)/1e5 + num(lo,'val',0)/1e5)); rgb = hslToRgb(hsl); }
+  const sh = kid(c,'a:shade'); if (sh){ const f=num(sh,'val',1e5)/1e5; rgb = rgb.map(x=>x*f); }
+  const ti = kid(c,'a:tint'); if (ti){ const f=num(ti,'val',1e5)/1e5; rgb = rgb.map(x=>x+(255-x)*(1-f)); }
+  const al = kid(c,'a:alpha'); if (al) alpha = num(al,'val',1e5)/1e5;
+  rgb = rgb.map(x=>Math.round(Math.max(0,Math.min(255,x))));
+  return alpha<1 ? `rgba(${rgb.join(',')},${alpha.toFixed(2)})` : '#'+rgb.map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function fillOf(parent, ctx){ // parent contains solidFill/gradFill/noFill
+  if (!parent) return undefined;
+  if (kid(parent,'a:noFill')) return null;
+  const sf = kid(parent,'a:solidFill'); if (sf) return colorOf(sf.firstElementChild, ctx);
+  const gf = kid(parent,'a:gradFill'); if (gf){ const gs = desc(gf,'a:gs')[0]; return gs ? colorOf(gs.firstElementChild, ctx) : null; }
+  return undefined; // 정해지지 않음 → 스타일 참조로
+}
+
+async function loadDeck(buf){
+  const zip = await JSZip.loadAsync(buf);
+  const pkg = new Pkg(zip);
+  const pres = await pkg.xml('ppt/presentation.xml');
+  if (!pres) throw new Error('PPTX 구조(ppt/presentation.xml)를 찾지 못했습니다.');
+  const root = pres.documentElement;
+  const sz = kid(root,'p:sldSz');
+  const deck = { zip, pkg, cx:num(sz,'cx',9144000), cy:num(sz,'cy',6858000), defaultTextStyle:kid(root,'p:defaultTextStyle'),
+    slides:[], masters:new Map(), layouts:new Map(), media:new Map(), models:new Map() };
+  const presRels = await pkg.rels('ppt/presentation.xml');
+  for (const s of kidsOf(kid(root,'p:sldIdLst'),'p:sldId')){
+    const rid = s.getAttributeNS(NS.r,'id'); const rel = presRels[rid];
+    if (!rel || !zip.file(rel.target)) continue;
+    deck.slides.push(await loadSlide(deck, rel.target, rid));
+  }
+  return deck;
+}
+function phIndex(doc){
+  return desc(doc,'p:ph').map(ph => ({ type: ph.getAttribute('type') || 'obj', idx: ph.getAttribute('idx'), el: ph.parentNode.parentNode.parentNode }));
+}
+async function loadMaster(deck, path){
+  if (deck.masters.has(path)) return deck.masters.get(path);
+  const doc = await deck.pkg.xml(path), rels = await deck.pkg.rels(path);
+  const tr = relOfType(rels,'theme');
+  const theme = parseTheme(tr ? await deck.pkg.xml(tr.target) : null);
+  const cm = kid(doc.documentElement,'p:clrMap'); const clrMap = {};
+  if (cm) for (const a of cm.attributes) clrMap[a.name] = a.value;
+  const m = { path, doc, rels, theme, clrMap, phs: phIndex(doc), txStyles: kid(doc.documentElement,'p:txStyles'),
+    layoutPaths: Object.values(rels).filter(r=>r.type.endsWith('/slideLayout')).map(r=>r.target) };
+  deck.masters.set(path, m); return m;
+}
+async function loadLayout(deck, path){
+  if (deck.layouts.has(path)) return deck.layouts.get(path);
+  const doc = await deck.pkg.xml(path), rels = await deck.pkg.rels(path);
+  const master = await loadMaster(deck, relOfType(rels,'slideMaster').target);
+  const root = doc.documentElement;
+  const l = { path, doc, rels, master, phs: phIndex(doc), type: root.getAttribute('type') || '', showMasterSp: root.getAttribute('showMasterSp') !== '0' };
+  deck.layouts.set(path, l); return l;
+}
+async function loadSlide(deck, path, rid){
+  const doc = await deck.pkg.xml(path), rels = await deck.pkg.rels(path);
+  const layout = await loadLayout(deck, relOfType(rels,'slideLayout').target);
+  let notes = '';
+  const nr = relOfType(rels,'notesSlide');
+  if (nr){ const nd = await deck.pkg.xml(nr.target);
+    if (nd) for (const sp of desc(nd,'p:sp')){ const ph = desc(sp,'p:ph')[0]; if (ph && ph.getAttribute('type')==='body') notes += kidsOf(kid(sp,'p:txBody'),'a:p').map(p=>desc(p,'a:t').map(t=>t.textContent).join('')).join('\n'); } }
+  for (const r of Object.values(rels)) if (r.type.endsWith('/image') && !r.external) await mediaUrl(deck, r.target);
+  for (const part of [layout, layout.master]) for (const r of Object.values(part.rels)) if (r.type.endsWith('/image') && !r.external) await mediaUrl(deck, r.target);
+  return { path, rid, doc, rels, layout, notes: notes.trim(), showMasterSp: doc.documentElement.getAttribute('showMasterSp') !== '0' };
+}
+const MIME = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', bmp:'image/bmp', svg:'image/svg+xml' };
+async function mediaUrl(deck, path){
+  if (deck.media.has(path)) return deck.media.get(path);
+  const ext = path.split('.').pop().toLowerCase(); const f = deck.zip.file(path);
+  let rec = { ok:false, ext };
+  if (f && MIME[ext]){ const blob = new Blob([await f.async('uint8array')], { type: MIME[ext] }); rec = { ok:true, ext, blob, url: URL.createObjectURL(blob) }; }
+  deck.media.set(path, rec); return rec;
+}
+
+/* ---------- 도형 모델 ---------- */
+const normType = t => (t==='ctrTitle'||t==='title') ? 'title' : (['dt','ftr','sldNum','hdr'].includes(t) ? t : 'body');
+function matchPh(list, ph){
+  if (!list) return null;
+  if (ph.idx != null){ const m = list.find(p => p.idx === ph.idx); if (m) return m.el; }
+  const exact = list.find(p => p.type === ph.type); if (exact) return exact.el;
+  const t = normType(ph.type); return list.find(p => normType(p.type) === t)?.el || null;
+}
+function readXfrm(x){
+  if (!x) return null; const off = kid(x,'a:off'), ext = kid(x,'a:ext'); if (!off || !ext) return null;
+  return { x:num(off,'x',0), y:num(off,'y',0), w:num(ext,'cx',0), h:num(ext,'cy',0), rot:num(x,'rot',0)/60000 };
+}
+function themeFont(face, ctx, isTitle){
+  const th = ctx.theme; if (!face) return null;
+  if (face === '+mj-lt') return th.major.latin; if (face === '+mn-lt') return th.minor.latin;
+  if (face === '+mj-ea') return th.major.ea; if (face === '+mn-ea') return th.minor.ea;
+  return face;
+}
+function readRun(rPrs, ctx, fontScale, isTitle, text){
+  const pick = a => { for (const e of rPrs){ const v = e && e.getAttribute(a); if (v != null) return v; } return null; };
+  const sz = pick('sz'); const b = pick('b'), i = pick('i'), u = pick('u');
+  let color = null; for (const e of rPrs){ if (!e) continue; const f = fillOf(e, ctx); if (f !== undefined){ color = f; break; } }
+  let latin = null, ea = null;
+  for (const e of rPrs){ if (!e) continue; if (!latin){ const l = kid(e,'a:latin'); if (l) latin = themeFont(l.getAttribute('typeface'), ctx); } if (!ea){ const l = kid(e,'a:ea'); if (l) ea = themeFont(l.getAttribute('typeface'), ctx); } }
+  const th = ctx.theme[isTitle ? 'major' : 'minor'];
+  return { text, sz: (sz != null ? +sz/100 : 18) * fontScale, b: b==='1'||b==='true', i: i==='1'||i==='true', u: !!u && u!=='none',
+    color: color || ctx.defColor, fam: [latin || th.latin, ea || th.ea].filter(Boolean) };
+}
+function readPara(p, chain, ctx, fontScale, lnRed, isTitle){
+  const pPr = kid(p,'a:pPr'); const lvl = num(pPr,'lvl',0);
+  const levels = [pPr, ...chain.map(ls => kid(ls, `a:lvl${lvl+1}pPr`))].filter(Boolean);
+  const pick = a => { for (const l of levels){ const v = l.getAttribute(a); if (v != null) return v; } return null; };
+  const pickEl = names => { for (const l of levels) for (const n of names){ const e = kid(l, n); if (e) return e; } return null; };
+  const be = pickEl(['a:buNone','a:buChar','a:buAutoNum','a:buBlip']);
+  let bullet = null;
+  if (be && be.localName === 'buChar') bullet = { kind:'char', char: be.getAttribute('char') || '•' };
+  else if (be && be.localName === 'buAutoNum') bullet = { kind:'num', scheme: be.getAttribute('type') || 'arabicPeriod', start: num(be,'startAt',1) };
+  else if (be && be.localName === 'buBlip') bullet = { kind:'char', char:'■' };
+  const spc = n => { const e = pickEl([n]); if (!e) return null; const pc = kid(e,'a:spcPct'), pt = kid(e,'a:spcPts');
+    return pc ? { pct: num(pc,'val',100000)/1e5 } : pt ? { pts: num(pt,'val',0)/100 } : null; };
+  const ln = spc('a:lnSpc');
+  const defs = levels.map(l => kid(l,'a:defRPr'));
+  const runs = [];
+  for (const c of p.children){
+    if (c.namespaceURI !== NS.a) continue;
+    if (c.localName === 'r' || c.localName === 'fld') runs.push(readRun([kid(c,'a:rPr'), ...defs], ctx, fontScale, isTitle, kid(c,'a:t')?.textContent || ''));
+    else if (c.localName === 'br'){ const r = readRun([kid(c,'a:rPr'), ...defs], ctx, fontScale, isTitle, ''); r.br = true; runs.push(r); }
+  }
+  const end = readRun([kid(p,'a:endParaRPr'), ...defs], ctx, fontScale, isTitle, '');
+  const hasEnd = !!kid(p,'a:endParaRPr');
+  return { lvl, runs, bullet, algn: pick('algn') || 'l', marL: +(pick('marL') || 0), indent: +(pick('indent') || 0),
+    ln: ln && ln.pct != null ? { pct: Math.max(0.5, ln.pct - lnRed) } : ln, spcBef: spc('a:spcBef'), spcAft: spc('a:spcAft'),
+    endSz: end.sz, hasEnd, text: runs.map(r => r.br ? '\n' : r.text).join('') };
+}
+function readText(txBody, ph, inh, ctx){
+  const lTx = kid(inh?.layoutEl,'p:txBody'), mTx = kid(inh?.masterEl,'p:txBody');
+  const chain = [kid(txBody,'a:lstStyle'), kid(lTx,'a:lstStyle'), kid(mTx,'a:lstStyle')];
+  const t = ph ? normType(ph.type) : null;
+  const ts = ctx.master.txStyles;
+  if (ph) chain.push(kid(ts, t==='title' ? 'p:titleStyle' : (t==='body' ? 'p:bodyStyle' : 'p:otherStyle')));
+  chain.push(ctx.deck.defaultTextStyle);
+  if (!ph) chain.push(kid(ts,'p:otherStyle'));
+  const bps = [kid(txBody,'a:bodyPr'), kid(lTx,'a:bodyPr'), kid(mTx,'a:bodyPr')];
+  const ba = (n, d) => { for (const b of bps){ const v = b && b.getAttribute(n); if (v != null) return v; } return d; };
+  let auto = 'no', na = null;
+  for (const b of bps){ if (!b) continue; if ((na = kid(b,'a:normAutofit'))){ auto = 'norm'; break; } if (kid(b,'a:spAutoFit')){ auto = 'sp'; break; } if (kid(b,'a:noAutofit')){ break; } }
+  const own = kid(bps[0],'a:normAutofit');
+  const fontScale = num(own,'fontScale',100000)/1e5, lnRed = num(own,'lnSpcReduction',0)/1e5;
+  const body = { l:+ba('lIns',91440), t:+ba('tIns',45720), r:+ba('rIns',91440), b:+ba('bIns',45720), anchor: ba('anchor','t'),
+    wrap: ba('wrap','square'), vert: ba('vert','horz'), auto, fontScale, lnRed };
+  const isTitle = t === 'title';
+  const paras = kidsOf(txBody,'a:p').map(p => readPara(p, chain, ctx, fontScale, lnRed, isTitle));
+  return { body, paras, plain: paras.map(p => p.text).join('\n') };
+}
+function readTable(tbl, ctx){
+  const cols = kidsOf(kid(tbl,'a:tblGrid'),'a:gridCol').map(g => num(g,'w',0));
+  const rows = kidsOf(tbl,'a:tr').map(tr => ({ h: num(tr,'h',0), cells: kidsOf(tr,'a:tc').map(tc => {
+    const tx = kid(tc,'a:txBody'); const tcPr = kid(tc,'a:tcPr');
+    return { span: num(tc,'gridSpan',1), hMerge: tc.getAttribute('hMerge')==='1', vMerge: tc.getAttribute('vMerge')==='1', rowSpan: num(tc,'rowSpan',1),
+      fill: fillOf(tcPr, ctx) || null, text: tx ? readText(tx, null, null, ctx) : null };
+  }) }));
+  return { cols, rows };
+}
+function readShape(el, part, ctx, src, depth){
+  const ln = el.localName;
+  const nv = kid(el, ln==='sp' ? 'p:nvSpPr' : ln==='pic' ? 'p:nvPicPr' : ln==='graphicFrame' ? 'p:nvGraphicFramePr' : 'p:nvCxnSpPr');
+  const cNvPr = kid(nv,'p:cNvPr');
+  const phEl = q(nv,'p:nvPr/p:ph');
+  const ph = phEl ? { type: phEl.getAttribute('type') || 'obj', idx: phEl.getAttribute('idx') } : null;
+  if (ph && src !== 'slide') return null; // 레이아웃·마스터의 자리표시자는 화면에 나오지 않음
+  if (cNvPr && cNvPr.getAttribute('hidden') === '1') return null;
+  const spPr = kid(el,'p:spPr');
+  let xf = ln==='graphicFrame' ? readXfrm(kid(el,'p:xfrm')) : readXfrm(kid(spPr,'a:xfrm'));
+  let inh = null;
+  if (ph){ inh = { layoutEl: matchPh(ctx.layout.phs, ph), masterEl: matchPh(ctx.master.phs, ph) };
+    if (!xf) xf = readXfrm(q(inh.layoutEl,'p:spPr/a:xfrm')) || readXfrm(q(inh.masterEl,'p:spPr/a:xfrm')); }
+  if (!xf) return null;
+  const s = { id: cNvPr?.getAttribute('id'), name: cNvPr?.getAttribute('name') || '', descr: cNvPr?.getAttribute('descr') || '',
+    kind: ln, src, depth, ph, ...xf, partPath: part.path };
+  const style = kid(el,'p:style');
+  if (spPr){
+    let f = fillOf(spPr, ctx);
+    if (f === undefined){ const fr = kid(style,'a:fillRef'); f = fr && num(fr,'idx',0) > 0 ? colorOf(fr.firstElementChild, ctx) : null; }
+    s.fill = ln==='pic' ? null : f;
+    const lnEl = kid(spPr,'a:ln'); let lf = fillOf(lnEl, ctx);
+    if (lf === undefined){ const lr = kid(style,'a:lnRef'); lf = lr && num(lr,'idx',0) > 0 ? colorOf(lr.firstElementChild, ctx) : null; }
+    s.line = lf; s.lineW = num(lnEl,'w',12700);
+    s.geom = kid(spPr,'a:prstGeom')?.getAttribute('prst') || (kid(spPr,'a:custGeom') ? 'cust' : 'rect');
+  }
+  if (ln === 'sp'){ const tx = kid(el,'p:txBody'); if (tx) s.text = readText(tx, ph, inh, ctx); }
+  if (ln === 'pic'){ const blip = q(el,'p:blipFill/a:blip'); const rel = blip && part.rels[blip.getAttributeNS(NS.r,'embed')]; s.img = rel ? rel.target : null; }
+  if (ln === 'graphicFrame'){
+    const gd = q(el,'a:graphic/a:graphicData'); const uri = gd?.getAttribute('uri') || '';
+    if (uri.endsWith('/table')){ s.frame = 'table'; s.table = readTable(kid(gd,'a:tbl'), ctx); }
+    else if (uri.endsWith('/chart')){ s.frame = 'chart'; const c = desc(gd,'c:chart')[0]; s.rel = c && part.rels[c.getAttributeNS(NS.r,'id')]; }
+    else if (uri.endsWith('/diagram')){ s.frame = 'diagram'; const d = gd.firstElementChild; s.rel = d && part.rels[d.getAttributeNS(NS.r,'dm')]; }
+    else s.frame = 'other';
+  }
+  return s;
+}
+function walkTree(tree, part, ctx, xform, out, src, depth){
+  for (const el of tree.children){
+    const ln = el.localName;
+    if (el.namespaceURI === NS.mc && ln === 'AlternateContent'){ const fb = kid(el,'mc:Fallback') || kid(el,'mc:Choice'); if (fb) walkTree(fb, part, ctx, xform, out, src, depth); continue; }
+    if (el.namespaceURI !== NS.p) continue;
+    if (ln === 'grpSp'){
+      const x = q(el,'p:grpSpPr/a:xfrm'); const g = readXfrm(x); let t = xform;
+      if (g){ const co = kid(x,'a:chOff'), ce = kid(x,'a:chExt');
+        const cox = num(co,'x',g.x), coy = num(co,'y',g.y), ccx = num(ce,'cx',g.w) || 1, ccy = num(ce,'cy',g.h) || 1;
+        const sx = g.w/ccx, sy = g.h/ccy, parent = xform;
+        t = r => parent({ x: g.x + (r.x-cox)*sx, y: g.y + (r.y-coy)*sy, w: r.w*sx, h: r.h*sy }); }
+      walkTree(el, part, ctx, t, out, src, depth+1); continue;
+    }
+    if (['sp','pic','graphicFrame','cxnSp'].includes(ln)){
+      const s = readShape(el, part, ctx, src, depth);
+      if (s){ const r = xform(s); s.x = r.x; s.y = r.y; s.w = r.w; s.h = r.h; out.push(s); }
+    }
+  }
+}
+function bgOf(parts, ctx){
+  for (const part of parts){
+    const bg = q(part.doc.documentElement,'p:cSld/p:bg'); if (!bg) continue;
+    const pr = kid(bg,'p:bgPr');
+    if (pr){ const bl = q(pr,'a:blipFill/a:blip'); if (bl){ const rel = part.rels[bl.getAttributeNS(NS.r,'embed')]; if (rel) return { img: rel.target }; }
+      const f = fillOf(pr, ctx); if (f) return { color: f }; }
+    const ref = kid(bg,'p:bgRef'); if (ref){ const c = colorOf(ref.firstElementChild, ctx); if (c) return { color: c }; }
+  }
+  return { color: '#ffffff' };
+}
+function ctxFor(deck, layout){
+  const master = layout.master;
+  const ctx = { deck, layout, master, theme: master.theme, clrMap: master.clrMap };
+  const sc = document.implementation.createDocument(NS.a, 'a:schemeClr', null).documentElement; sc.setAttribute('val','tx1');
+  ctx.defColor = colorOf(sc, ctx) || '#000000';
+  return ctx;
+}
+const ident = r => ({ x:r.x, y:r.y, w:r.w, h:r.h });
+function spTreeOf(doc){ return q(doc.documentElement,'p:cSld/p:spTree'); }
+function getModel(deck, si){
+  if (deck.models.has(si)) return deck.models.get(si);
+  const s = deck.slides[si], layout = s.layout, master = layout.master;
+  const ctx = ctxFor(deck, layout); const shapes = [];
+  if (s.showMasterSp && layout.showMasterSp) walkTree(spTreeOf(master.doc), master, ctx, ident, shapes, 'master', 0);
+  if (s.showMasterSp) walkTree(spTreeOf(layout.doc), layout, ctx, ident, shapes, 'layout', 0);
+  walkTree(spTreeOf(s.doc), s, ctx, ident, shapes, 'slide', 0);
+  const m = { cx: deck.cx, cy: deck.cy, shapes, ctx, bg: bgOf([s, layout, master], ctx) };
+  deck.models.set(si, m); return m;
+}
+function layoutModel(deck, layout){ // 보충 슬라이드용: 레이아웃·마스터의 장식만
+  const ctx = ctxFor(deck, layout); const shapes = [];
+  if (layout.showMasterSp) walkTree(spTreeOf(layout.master.doc), layout.master, ctx, ident, shapes, 'master', 0);
+  walkTree(spTreeOf(layout.doc), layout, ctx, ident, shapes, 'layout', 0);
+  return { cx: deck.cx, cy: deck.cy, shapes, ctx, bg: bgOf([layout, layout.master], ctx) };
+}
+
+/* ========================= 렌더링·측정 ========================= */
+const LH = 1.2;           // PowerPoint 한 줄 간격 근사
+const SAFETY = 1.12;      // 글꼴 차이를 감안한 높이 여유
+const MK = 2/EMU_PT;      // 측정용 배율(1pt = 2px)
+function famCss(fam){ return [...fam.map(f => `"${f}"`), '"Malgun Gothic"', '"Apple SD Gothic Neo"', '"Noto Sans KR"', 'sans-serif'].join(','); }
+function bulletText(b, counter){
+  if (b.kind === 'char') return b.char;
+  const n = counter;
+  const sch = b.scheme || '';
+  let s = String(n);
+  if (sch.startsWith('alphaLc')) s = String.fromCharCode(96 + ((n-1)%26)+1);
+  else if (sch.startsWith('alphaUc')) s = String.fromCharCode(64 + ((n-1)%26)+1);
+  else if (sch.startsWith('romanLc')) s = ['i','ii','iii','iv','v','vi','vii','viii','ix','x'][n-1] || String(n);
+  else if (sch.startsWith('romanUc')) s = ['I','II','III','IV','V','VI','VII','VIII','IX','X'][n-1] || String(n);
+  if (sch.endsWith('ParenR')) return s + ')'; if (sch.endsWith('ParenBoth')) return '(' + s + ')';
+  return s + '.';
+}
+function textEl(text, k, szFn){
+  const box = h('div', { class:'tb' });
+  const counters = {};
+  for (const p of text.paras){
+    const vis = p.runs.filter(r => !r.br && r.text);
+    const sizes = vis.map(r => szFn(r.sz));
+    const base = sizes.length ? Math.max(...sizes) : szFn(p.endSz);
+    const el = h('div', { class:'tp' });
+    el.style.fontSize = base*EMU_PT*k + 'px';
+    el.style.lineHeight = p.ln && p.ln.pts != null ? (p.ln.pts*EMU_PT*k)+'px' : String(LH * (p.ln && p.ln.pct != null ? p.ln.pct : 1));
+    const sp = v => !v ? 0 : v.pts != null ? v.pts*EMU_PT*k : v.pct*base*LH*EMU_PT*k;
+    el.style.paddingTop = sp(p.spcBef) + 'px'; el.style.paddingBottom = sp(p.spcAft) + 'px';
+    el.style.paddingLeft = Math.max(0, p.marL)*k + 'px';
+    el.style.textIndent = p.indent*k + 'px';
+    el.style.textAlign = { ctr:'center', r:'right', just:'justify', dist:'justify' }[p.algn] || 'left';
+    if (p.bullet && vis.length){
+      let label;
+      if (p.bullet.kind === 'num'){ counters[p.lvl] = (counters[p.lvl] || (p.bullet.start - 1)) + 1; label = bulletText(p.bullet, counters[p.lvl]); }
+      else label = p.bullet.char;
+      const r0 = vis[0];
+      const bu = h('span', { class:'bu' }, label);
+      bu.style.minWidth = Math.max(0, -p.indent)*k + 'px';
+      bu.style.fontSize = szFn(r0.sz)*EMU_PT*k + 'px'; bu.style.color = r0.color || '#000';
+      bu.style.fontFamily = famCss(r0.fam || []);
+      el.append(bu);
+    } else if (!p.bullet) { for (const key in counters) if (+key >= p.lvl) delete counters[key]; }
+    if (!vis.length && !p.runs.some(r => r.br)) el.append(h('span', null, '​'));
+    for (const r of p.runs){
+      if (r.br){ el.append(h('br')); continue; }
+      if (!r.text) continue;
+      const s = h('span', null, r.text);
+      s.style.fontSize = szFn(r.sz)*EMU_PT*k + 'px';
+      if (r.b) s.style.fontWeight = '700'; if (r.i) s.style.fontStyle = 'italic'; if (r.u) s.style.textDecoration = 'underline';
+      s.style.color = r.color || '#000'; s.style.fontFamily = famCss(r.fam || []);
+      el.append(s);
+    }
+    box.append(el);
+  }
+  return box;
+}
+const sameSz = x => x;
+function measureParas(text, widthEmu, szFn){
+  const host = $('#measure'); host.textContent = '';
+  const wrap = h('div', null, textEl(text, MK, szFn || sameSz));
+  wrap.style.width = Math.max(1, widthEmu*MK) + 'px';
+  if (text.body && text.body.wrap === 'none') wrap.style.width = 'max-content';
+  host.append(wrap);
+  return wrap.getBoundingClientRect().height / MK * SAFETY;
+}
+function measureShape(s, szFn){ const b = s.text.body; return measureParas(s.text, s.w - b.l - b.r, szFn) + b.t + b.b; }
+
+function renderTextInto(d, text, k, szFn){
+  const b = text.body;
+  const w = h('div', { class:'tbw' });
+  w.style.padding = `${b.t*k}px ${b.r*k}px ${b.b*k}px ${b.l*k}px`;
+  w.style.justifyContent = b.anchor === 'ctr' ? 'center' : b.anchor === 'b' ? 'flex-end' : 'flex-start';
+  if (b.vert !== 'horz') w.style.writingMode = 'vertical-rl';
+  w.append(textEl(text, k, szFn || sameSz));
+  d.append(w);
+}
+function renderSlide(deck, model, W, opts = {}){
+  const k = W / model.cx;
+  const root = h('div', { class: 'slide' + (opts.mark ? ' mark' : '') });
+  root.style.width = W + 'px'; root.style.height = model.cy*k + 'px';
+  if (model.bg.color) root.style.background = model.bg.color;
+  if (model.bg.img){ const m = deck.media.get(model.bg.img); if (m && m.ok){ root.style.backgroundImage = `url("${m.url}")`; root.style.backgroundSize = '100% 100%'; } }
+  const marks = opts.marks || new Set();
+  for (const s of model.shapes){
+    const d = h('div', { class: 'shp' + (marks.has(s.id) && s.src === 'slide' ? ' newbox' : '') });
+    Object.assign(d.style, { left: s.x*k+'px', top: s.y*k+'px', width: s.w*k+'px', height: s.h*k+'px' });
+    if (s.rot) d.style.transform = `rotate(${s.rot}deg)`;
+    if (s.fill) d.style.background = s.fill;
+    if (s.line && s.kind !== 'cxnSp') d.style.border = `${Math.max(1, s.lineW*k)}px solid ${s.line}`;
+    if (s.kind === 'cxnSp'){ d.style.border = 'none'; d.style.borderTop = `${Math.max(1, (s.lineW||12700)*k)}px solid ${s.line || '#000'}`; d.style.height = '0'; }
+    if (s.geom === 'ellipse') d.style.borderRadius = '50%';
+    if (s.geom === 'roundRect') d.style.borderRadius = Math.min(s.w, s.h)*k*0.16 + 'px';
+    if (s.kind === 'pic'){
+      const m = s.img && deck.media.get(s.img);
+      if (m && m.ok) d.append(h('img', { src: m.url, alt: s.descr || '' }));
+      else d.append(h('div', { class:'ph-box' }, `그림 (${(m && m.ext || '?').toUpperCase()} 미리보기 불가)`));
+    }
+    if (s.kind === 'graphicFrame'){
+      if (s.frame === 'table') d.append(renderTable(s.table, k));
+      else d.append(h('div', { class:'ph-box' }, s.frame === 'chart' ? '차트' : s.frame === 'diagram' ? 'SmartArt 도해' : '개체'));
+    }
+    if (s.text && s.text.plain.length) renderTextInto(d, s.text, k);
+    root.append(d);
+  }
+  return root;
+}
+function renderTable(t, k){
+  const tb = h('table');
+  const cg = h('colgroup'); for (const w of t.cols) cg.append(h('col', { style:{ width: w*k+'px' } })); tb.append(cg);
+  for (const r of t.rows){
+    const tr = h('tr', { style: { height: r.h*k+'px' } });
+    for (const c of r.cells){
+      if (c.hMerge || c.vMerge) continue;
+      const td = h('td'); if (c.span > 1) td.colSpan = c.span; if (c.rowSpan > 1) td.rowSpan = c.rowSpan;
+      if (c.fill) td.style.background = c.fill;
+      td.style.position = 'relative';
+      if (c.text){ const inner = h('div', { style:{ padding: `${c.text.body.t*k}px ${c.text.body.r*k}px` } }, textEl(c.text, k, sameSz)); td.append(inner); }
+      tr.append(td);
+    }
+    tb.append(tr);
+  }
+  return tb;
+}
+
+/* ========================= 배치 계산 ========================= */
+const FOOTERS = ['title','ctrTitle','dt','ftr','sldNum','hdr'];
+function editableBody(s){
+  return s.kind === 'sp' && s.src === 'slide' && s.depth === 0 && s.text && s.text.plain.trim() && !(s.ph && FOOTERS.includes(s.ph.type))
+    && !s.fill && !s.line && !s.rot && s.text.body.vert === 'horz' && s.text.body.wrap !== 'none';
+}
+const shrinkable = s => editableBody(s) && s.text.paras.some(p => p.runs.some(r => r.text && r.sz >= 20));
+const shrinkFn = sc => sc === 1 ? sameSz : (x => x >= 20 ? Math.max(20, Math.floor(x*sc)) : x);
+function intersects(a, b){ return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h; }
+function interArea(a, b){ const w = Math.min(a.x+a.w, b.x+b.w) - Math.max(a.x, b.x), hh = Math.min(a.y+a.h, b.y+b.h) - Math.max(a.y, b.y); return w > 0 && hh > 0 ? w*hh : 0; }
+function bbox(s){
+  if (!s.rot) return { x:s.x, y:s.y, w:s.w, h:s.h };
+  const t = s.rot*Math.PI/180, c = Math.abs(Math.cos(t)), sn = Math.abs(Math.sin(t));
+  const w = s.w*c + s.h*sn, hh = s.w*sn + s.h*c; return { x: s.x + s.w/2 - w/2, y: s.y + s.h/2 - hh/2, w, h: hh };
+}
+function textRect(s, need){ return { x: s.x, y: s.y + (s.h - need) * (s.text.body.anchor === 'ctr' ? 0.5 : s.text.body.anchor === 'b' ? 1 : 0), w: s.w, h: need }; }
+function isBackdrop(s, model){ return s.w*s.h > 0.6*model.cx*model.cy && !(s.text && s.text.plain.trim()); }
+function occupancy(model, szFn){
+  const rects = [];
+  for (const s of model.shapes){
+    const hasText = s.text && s.text.plain.trim();
+    if (s.kind === 'sp' && !hasText && !s.fill && !s.line) continue;   // 빈 자리표시자·빈 상자
+    if (isBackdrop(s, model)) continue;                                  // 배경처럼 깔린 그림
+    if (editableBody(s)){
+      const need = measureShape(s, szFn);
+      rects.push({ ...textRect(s, need), shape: s, need });
+    } else if (hasText && s.kind === 'sp' && !s.rot){
+      const need = measureShape(s, sameSz); const r = bbox(s);
+      rects.push(need > s.h ? { ...r, ...textRect(s, need), x: r.x, w: r.w, shape: s, need } : { ...r, shape: s });
+    } else rects.push({ ...bbox(s), shape: s });
+  }
+  return rects;
+}
+function freeCandidates(rects, cx, cy, minWFrac){
+  const cols = 96, rows = Math.max(24, Math.round(96*cy/cx)), cw = cx/cols, ch = cy/rows;
+  const blocked = Array.from({ length: rows }, () => new Uint8Array(cols));
+  const mx = Math.ceil(cols*0.035), my = Math.ceil(rows*0.035);
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (r < my || r >= rows-my || c < mx || c >= cols-mx) blocked[r][c] = 1;
+  const pad = 0.08*914400;
+  for (const o of rects){
+    const r0 = Math.max(0, Math.floor((o.y - pad)/ch)), r1 = Math.min(rows-1, Math.ceil((o.y + o.h + pad)/ch) - 1);
+    const c0 = Math.max(0, Math.floor((o.x - pad)/cw)), c1 = Math.min(cols-1, Math.ceil((o.x + o.w + pad)/cw) - 1);
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) blocked[r][c] = 1;
+  }
+  const heights = new Int32Array(cols + 1); const found = new Map();
+  const minCols = Math.ceil(cols*minWFrac);
+  for (let r = 0; r < rows; r++){
+    for (let c = 0; c < cols; c++) heights[c] = blocked[r][c] ? 0 : heights[c] + 1;
+    heights[cols] = 0; const st = [];
+    for (let c = 0; c <= cols; c++){
+      while (st.length && heights[st[st.length-1]] >= heights[c]){
+        const top = st.pop(); const hgt = heights[top]; if (!hgt) continue;
+        const left = st.length ? st[st.length-1] + 1 : 0, width = c - left;
+        if (width >= minCols){ const key = `${left},${r-hgt+1},${width},${hgt}`; if (!found.has(key)) found.set(key, { x: left*cw, y: (r-hgt+1)*ch, w: width*cw, h: hgt*ch }); }
+      }
+      st.push(c);
+    }
+  }
+  return [...found.values()].sort((a, b) => b.w*b.h - a.w*a.h).slice(0, 14);
+}
+
+/* 새 설명 상자의 글 모양: 측정과 PPT 저장에 똑같이 씀 */
+const BOX = { fill:'FFF9D6', line:'D4A800', head:'6B5600', ink:'1F2328', l:118872, r:118872, t:91440, b:91440, marL:285750 };
+function chunkParas(c, sz, fam){
+  const lines = String(c.text).split(/\n+/).map(x => x.trim()).filter(Boolean);
+  if (!lines.length) lines.push('');
+  const run = (text, b) => ({ text, sz, b, color: '#' + BOX.ink, fam });
+  const out = [];
+  lines.forEach((ln, i) => {
+    const runs = [];
+    if (i === 0 && c.title) runs.push(run(c.title + ': ', true));
+    runs.push(run(ln, false));
+    out.push(i === 0
+      ? { lvl:0, runs, bullet: c.cont ? null : { kind:'char', char:'•' }, algn:'l', marL: BOX.marL, indent: c.cont ? 0 : -BOX.marL, spcBef: { pts: 4 }, spcAft: null, ln: null, endSz: sz }
+      : { lvl:0, runs, bullet: null, algn:'l', marL: BOX.marL, indent: 0, spcBef: null, spcAft: null, ln: null, endSz: sz });
+  });
+  return out;
+}
+function headParas(label, sz, fam){
+  return [{ lvl:0, runs: [{ text: label, sz, b: true, color: '#' + BOX.head, fam }], bullet: null, algn:'l', marL: 0, indent: 0, spcBef: null, spcAft: { pts: 2 }, ln: null, endSz: sz }];
+}
+function boxText(label, chunks, sz, fam){
+  return { body: { l: BOX.l, r: BOX.r, t: BOX.t, b: BOX.b, anchor: 't', wrap: 'square', vert: 'horz' },
+    paras: [...headParas(label, sz, fam), ...chunks.flatMap(c => chunkParas(c, sz, fam))] };
+}
+function makeMeasurer(sz, fam){
+  const cache = new Map();
+  const m = (paras, w) => measureParas({ paras }, w - BOX.l - BOX.r);
+  return {
+    head(label, w){ const key = 'h|' + label + '|' + Math.round(w/10000); if (!cache.has(key)) cache.set(key, m(headParas(label, sz, fam), w) + BOX.t + BOX.b); return cache.get(key); },
+    item(c, w){ const key = (c.cont ? 'c|' : 'i|') + c.title + '|' + c.text + '|' + Math.round(w/10000); if (!cache.has(key)) cache.set(key, m(chunkParas(c, sz, fam), w)); return cache.get(key); }
+  };
+}
+function fitItems(chunks, rect, M, label){
+  let hsum = M.head(label, rect.w); const placed = [];
+  for (const c of chunks){ const hi = M.item(c, rect.w); if (hsum + hi <= rect.h){ placed.push(c); hsum += hi; } else break; }
+  return { placed, height: hsum };
+}
+function splitSentences(text){
+  const parts = [];
+  for (const line of String(text).split(/\n+/)){
+    const segs = line.split(/(?<=[.!?。])\s+|(?<=(?:임|함|음|됨))[.;]?\s+(?=\S)/u).map(x => x.trim()).filter(Boolean);
+    parts.push(...(segs.length ? segs : [line]));
+  }
+  return parts;
+}
+function pickSuppLayout(deck, slide){
+  const master = slide.layout.master;
+  for (const p of master.layoutPaths){ const l = deck.layouts.get(p); if (l && l.type === 'titleOnly') return l; }
+  return slide.layout;
+}
+async function preloadLayouts(deck){ for (const m of deck.masters.values()) for (const p of m.layoutPaths) if (deck.zip.file(p)) await loadLayout(deck, p); }
+function slideTitle(deck, si){
+  const m = getModel(deck, si);
+  const t = m.shapes.find(s => s.src === 'slide' && s.ph && normType(s.ph.type) === 'title' && s.text && s.text.plain.trim());
+  if (t) return t.text.plain.replace(/\s+/g, ' ').trim();
+  const any = m.shapes.filter(s => s.src === 'slide' && s.text && s.text.plain.trim()).sort((a, b) => a.y - b.y)[0];
+  return any ? any.text.plain.split('\n')[0].trim().slice(0, 60) : `슬라이드 ${si+1}`;
+}
+function suppFrame(deck, si, sz){
+  const slide = deck.slides[si]; const layout = pickSuppLayout(deck, slide);
+  const model = layoutModel(deck, layout); const ctx = model.ctx;
+  const titleStr = `${slideTitle(deck, si)} — 보충 설명`;
+  const ph = { type: 'title', idx: null };
+  const inh = { layoutEl: matchPh(layout.phs, ph), masterEl: matchPh(layout.master.phs, ph) };
+  let tRect = readXfrm(q(inh.layoutEl,'p:spPr/a:xfrm')) || readXfrm(q(inh.masterEl,'p:spPr/a:xfrm'));
+  const usePh = !!tRect;
+  const tdoc = new DOMParser().parseFromString(`<p:txBody xmlns:p="${NS.p}" xmlns:a="${NS.a}"><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="ko-KR"/><a:t>${esc(titleStr)}</a:t></a:r></a:p></p:txBody>`, 'application/xml');
+  let ttext;
+  if (usePh) ttext = readText(tdoc.documentElement, ph, inh, ctx);
+  else { tRect = { x: deck.cx*0.05, y: deck.cy*0.04, w: deck.cx*0.9, h: deck.cy*0.14 }; ttext = readText(tdoc.documentElement, null, null, ctx); ttext.paras.forEach(p => p.runs.forEach(r => { r.sz = 28; r.b = true; })); }
+  const tshape = { ...tRect, text: ttext, kind: 'sp' };
+  let titleSz = null; const base = ttext.paras[0].runs[0].sz;
+  let need = measureShape(tshape, sameSz);
+  if (need > tRect.h){ for (let s = Math.floor(base) - 2; s >= 20; s -= 2){ need = measureShape(tshape, () => s); titleSz = s; if (need <= tRect.h) break; } }
+  if (!usePh) titleSz = titleSz || 28;
+  const tOcc = { ...textRect(tshape, need) };
+  if (need > tRect.h) tRect = { ...tRect, h: need };
+  const rects = [...occupancy(model, sameSz), tOcc];
+  const cands = freeCandidates(rects, deck.cx, deck.cy, 0.5);
+  return { layout, usePh, titleStr, titleSz, titleRect: tRect, rect: cands[0] || { x: deck.cx*0.05, y: tRect.y + tRect.h, w: deck.cx*0.9, h: deck.cy*0.95 - tRect.y - tRect.h }, ctx };
+}
+function themeFam(ctx){ return [ctx.theme.minor.latin, ctx.theme.minor.ea].filter(Boolean); }
+function paginate(chunks, frame, M, label){
+  const pages = []; let queue = chunks.slice(); const warn = [];
+  while (queue.length){
+    const f = fitItems(queue, frame.rect, M, label);
+    if (f.placed.length){ pages.push({ chunks: f.placed, height: f.height }); queue = queue.slice(f.placed.length); continue; }
+    // 항목 하나가 한 장에도 안 들어감 → 문장 단위로 나눠 이어 배치
+    const c = queue.shift(); const sents = splitSentences(c.text);
+    const pieces = sents.map((t, i) => ({ ...c, text: t, title: i === 0 ? c.title : '', cont: i > 0 }));
+    let cur = []; let hsum = M.head(label, frame.rect.w);
+    for (const pc of pieces){
+      const hi = M.item(pc, frame.rect.w);
+      if (cur.length && hsum + hi > frame.rect.h){ pages.push({ chunks: cur, height: hsum }); cur = []; hsum = M.head(label, frame.rect.w); }
+      if (!cur.length && hsum + hi > frame.rect.h) warn.push(`"${(c.title || c.text).slice(0, 20)}…"의 한 문장이 보충 슬라이드 한 장보다 깁니다.`);
+      cur.push(pc); hsum += hi;
+    }
+    if (cur.length) pages.push({ chunks: cur, height: Math.min(hsum, frame.rect.h) });
+  }
+  return { pages, warn };
+}
+function planPage(deck, si, items, opts){
+  const model = getModel(deck, si);
+  const chunks = items.map(it => ({ id: it.id, type: it.type, title: (it.title || '').trim(), text: (it.text || '').trim() })).filter(c => c.text || c.title);
+  const res = { si, title: slideTitle(deck, si), scale: 1, box: null, inOrig: [], rest: chunks, resized: [], fontChanges: [], supp: null, warn: [], before: [] };
+  if (!chunks.length) return res;
+  const fam = themeFam(model.ctx);
+  const M = makeMeasurer(opts.sz, fam);
+  const label = '보충 설명';
+  if (opts.mode !== 'supp'){
+    const bodies = model.shapes.filter(editableBody);
+    const canShrink = bodies.some(shrinkable);
+    const scales = canShrink ? [1, .95, .9, .85, .8, .75, .7, .65, .6, .55, .5] : [1];
+    let best = null, occ1 = null, prevSig = '';
+    for (const sc of scales){
+      const fn = shrinkFn(sc);
+      const sig = bodies.map(b => b.text.paras.map(p => p.runs.map(r => fn(r.sz)).join(',')).join(';')).join('|');
+      if (sig === prevSig) continue; prevSig = sig;
+      const rects = occupancy(model, fn); if (sc === 1) occ1 = rects;
+      const cands = freeCandidates(rects, model.cx, model.cy, 0.4);
+      let local = null;
+      for (const c of cands){ const f = fitItems(chunks, c, M, label);
+        if (!local || f.placed.length > local.placed.length || (f.placed.length === local.placed.length && c.w*c.h > local.c.w*local.c.h)) local = { ...f, c }; }
+      if (!local) continue;
+      if (sc === 1) best = { ...local, sc, rects, fn };
+      if (local.placed.length === chunks.length){ best = { ...local, sc, rects, fn }; break; }
+    }
+    if (best && best.placed.length){
+      const c = best.c;
+      res.box = { x: c.x, y: c.y, w: c.w, h: Math.min(c.h, best.height) };
+      res.scale = best.sc; res.inOrig = best.placed; res.rest = chunks.slice(best.placed.length);
+      for (const r of best.rects){
+        const s = r.shape; if (!editableBody(s)) continue;
+        const r1 = occ1.find(o => o.shape === s);
+        if (!(intersects(s, res.box) || (r1 && intersects(r1, res.box)))) continue;
+        const rect = { x: s.x, y: r.y, w: s.w, h: r.h };
+        res.resized.push({ id: s.id, rect, from: { x: s.x, y: s.y, w: s.w, h: s.h } });
+        if (best.sc !== 1 && shrinkable(s)){
+          const sizes = s.text.paras.map(p => ({ runs: p.runs.map(x => best.fn(x.sz)), end: best.fn(p.endSz) }));
+          const before = [...new Set(s.text.paras.flatMap(p => p.runs.filter(x => x.text && x.sz >= 20).map(x => Math.round(x.sz))))];
+          const after = [...new Set(s.text.paras.flatMap(p => p.runs.filter(x => x.text && x.sz >= 20).map(x => best.fn(x.sz))))];
+          res.fontChanges.push({ id: s.id, sizes, fontScale: s.text.body.fontScale, before, after });
+        }
+      }
+    }
+  }
+  if (res.rest.length){
+    const frame = suppFrame(deck, si, opts.sz);
+    const Ms = makeMeasurer(opts.sz, themeFam(frame.ctx));
+    const pg = paginate(res.rest, frame, Ms, `보충 설명 · 원본 ${si+1}페이지 관련`);
+    res.supp = { frame, pages: pg.pages }; res.warn.push(...pg.warn);
+  }
+  return res;
+}
+
+/* ========================= PPTX 쓰기 ========================= */
+function rPrXml(r, extra){ return `<a:rPr lang="ko-KR" altLang="en-US" sz="${Math.round(r.sz*100)}"${r.b ? ' b="1"' : ''} dirty="0"${extra || ''}><a:solidFill><a:srgbClr val="${r.color.replace('#','').toUpperCase()}"/></a:solidFill></a:rPr>`; }
+function parasXml(paras){
+  return paras.map(p => {
+    const sp = (tag, v) => v ? `<a:${tag}><a:spcPts val="${Math.round(v.pts*100)}"/></a:${tag}>` : '';
+    const bu = p.bullet ? `<a:buFont typeface="Arial"/><a:buChar char="${esc(p.bullet.char)}"/>` : '<a:buNone/>';
+    const runs = p.runs.map(r => `<a:r>${rPrXml(r)}<a:t>${esc(r.text)}</a:t></a:r>`).join('');
+    return `<a:p><a:pPr marL="${p.marL}" indent="${p.indent}">${sp('spcBef', p.spcBef)}${sp('spcAft', p.spcAft)}${bu}</a:pPr>${runs}<a:endParaRPr lang="ko-KR" altLang="en-US" sz="${Math.round(p.endSz*100)}" dirty="0"/></a:p>`;
+  }).join('');
+}
+function boxSpXml(id, name, rect, text){
+  const R = v => Math.round(v);
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${esc(name)}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>`
+    + `<p:spPr><a:xfrm><a:off x="${R(rect.x)}" y="${R(rect.y)}"/><a:ext cx="${R(rect.w)}" cy="${R(rect.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`
+    + `<a:solidFill><a:srgbClr val="${BOX.fill}"/></a:solidFill><a:ln w="12700"><a:solidFill><a:srgbClr val="${BOX.line}"/></a:solidFill></a:ln></p:spPr>`
+    + `<p:txBody><a:bodyPr wrap="square" lIns="${BOX.l}" tIns="${BOX.t}" rIns="${BOX.r}" bIns="${BOX.b}" rtlCol="0" anchor="t"><a:noAutofit/></a:bodyPr><a:lstStyle/>`
+    + parasXml(text.paras) + `</p:txBody></p:sp>`;
+}
+const FRAG_NS = `xmlns:a="${NS.a}" xmlns:p="${NS.p}" xmlns:r="${NS.r}"`;
+function fragment(doc, xml){ const d = new DOMParser().parseFromString(`<root ${FRAG_NS}>${xml}</root>`, 'application/xml'); return doc.importNode(d.documentElement.firstElementChild, true); }
+function shapeById(doc, id){ const c = desc(doc,'p:cNvPr').find(e => e.getAttribute('id') === String(id)); return c ? c.parentNode.parentNode : null; }
+function maxShapeId(doc){ return desc(doc,'p:cNvPr').reduce((m, e) => Math.max(m, +e.getAttribute('id') || 0), 1); }
+function setXfrm(doc, sp, rect){
+  const spPr = kid(sp,'p:spPr'); if (!spPr) return;
+  let x = kid(spPr,'a:xfrm');
+  if (!x){ x = fragment(doc, '<a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>'); spPr.insertBefore(x, spPr.firstChild); }
+  const off = kid(x,'a:off'), ext = kid(x,'a:ext');
+  off.setAttribute('x', Math.round(rect.x)); off.setAttribute('y', Math.round(rect.y));
+  ext.setAttribute('cx', Math.round(rect.w)); ext.setAttribute('cy', Math.round(rect.h));
+}
+function applySizes(doc, sp, ch){
+  const tx = kid(sp,'p:txBody'); if (!tx) return;
+  const writeAll = ch.fontScale !== 1;
+  const na = q(tx,'a:bodyPr/a:normAutofit');
+  if (na){ na.removeAttribute('fontScale'); na.removeAttribute('lnSpcReduction'); }
+  kidsOf(tx,'a:p').forEach((p, pi) => {
+    const sz = ch.sizes[pi]; if (!sz) return;
+    let ri = 0;
+    for (const c of [...p.children]){
+      if (c.namespaceURI !== NS.a || !['r','fld','br'].includes(c.localName)) continue;
+      const v = sz.runs[ri++]; if (v == null) continue;
+      let rPr = kid(c,'a:rPr');
+      if (!rPr){ rPr = doc.createElementNS(NS.a, 'a:rPr'); c.insertBefore(rPr, c.firstChild); }
+      const cur = rPr.getAttribute('sz');
+      if (writeAll || cur == null || Math.round(+cur/100) !== v || v !== Math.round(v)) rPr.setAttribute('sz', Math.round(v*100));
+    }
+    const e = kid(p,'a:endParaRPr'); if (e) e.setAttribute('sz', Math.round(sz.end*100));
+  });
+}
+function suppSlideXml(frame, page, idx, total, si, sz){
+  const title = frame.titleStr + (total > 1 ? ` (${idx+1}/${total})` : '');
+  const R = v => Math.round(v), t = frame.titleRect;
+  const tr = frame.titleSz ? ` sz="${frame.titleSz*100}"` : '';
+  const tb = frame.usePh ? '' : ' b="1"';
+  const titleSp = frame.usePh
+    ? `<p:sp><p:nvSpPr><p:cNvPr id="2" name="제목 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr><a:xfrm><a:off x="${R(t.x)}" y="${R(t.y)}"/><a:ext cx="${R(t.w)}" cy="${R(t.h)}"/></a:xfrm></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:r><a:rPr lang="ko-KR" altLang="en-US"${tr} dirty="0"/><a:t>${esc(title)}</a:t></a:r></a:p></p:txBody></p:sp>`
+    : `<p:sp><p:nvSpPr><p:cNvPr id="2" name="제목 1"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${R(t.x)}" y="${R(t.y)}"/><a:ext cx="${R(t.w)}" cy="${R(t.h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr wrap="square" anchor="b"><a:noAutofit/></a:bodyPr><a:lstStyle/><a:p><a:r><a:rPr lang="ko-KR" altLang="en-US"${tr}${tb} dirty="0"/><a:t>${esc(title)}</a:t></a:r></a:p></p:txBody></p:sp>`;
+  const text = boxText(`보충 설명 · 원본 ${si+1}페이지 관련`, page.chunks, sz, themeFam(frame.ctx));
+  const r = frame.rect;
+  const box = boxSpXml(3, '보충 설명', { x: r.x, y: r.y, w: r.w, h: Math.min(r.h, page.height) }, text);
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<p:sld ${FRAG_NS}><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${titleSp}${box}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+}
+async function buildPptx(srcBuf, deck, plans, sz){
+  const zip = await JSZip.loadAsync(srcBuf); const pkg = new Pkg(zip);
+  const pres = await pkg.xml('ppt/presentation.xml');
+  const presRelsPath = 'ppt/_rels/presentation.xml.rels';
+  const presRels = await pkg.xml(presRelsPath), ct = await pkg.xml('[Content_Types].xml');
+  const lst = kid(pres.documentElement,'p:sldIdLst');
+  let maxId = kidsOf(lst,'p:sldId').reduce((m, e) => Math.max(m, +e.getAttribute('id') || 0), 255);
+  let fileNo = Object.keys(zip.files).reduce((m, f) => { const mm = /^ppt\/slides\/slide(\d+)\.xml$/.exec(f); return mm ? Math.max(m, +mm[1]) : m; }, 0);
+  const usedRids = new Set([...presRels.documentElement.children].map(r => r.getAttribute('Id')));
+  const outMap = [];
+  for (let si = 0; si < deck.slides.length; si++){
+    const slide = deck.slides[si], plan = plans[si];
+    const sldEl = kidsOf(lst,'p:sldId').find(e => e.getAttributeNS(NS.r,'id') === slide.rid);
+    const tracked = [];
+    if (plan && plan.box){
+      const doc = await pkg.xml(slide.path);
+      for (const fc of plan.fontChanges){ const sp = shapeById(doc, fc.id); if (sp) applySizes(doc, sp, fc); }
+      for (const rz of plan.resized){ const sp = shapeById(doc, rz.id); if (sp) setXfrm(doc, sp, rz.rect); tracked.push(rz.id); }
+      const id = maxShapeId(doc) + 1;
+      const text = boxText('보충 설명', plan.inOrig, sz, themeFam(getModel(deck, si).ctx));
+      spTreeOf(doc).append(fragment(doc, boxSpXml(id, '보충 설명', plan.box, text)));
+      tracked.push(String(id));
+      zip.file(slide.path, serialize(doc));
+    }
+    outMap.push({ si, kind: 'orig', tracked, newIds: plan && plan.box ? [tracked[tracked.length-1]] : [], changed: !!(plan && plan.box), plan });
+    let anchor = sldEl;
+    const pages = plan && plan.supp ? plan.supp.pages : [];
+    for (let pi = 0; pi < pages.length; pi++){
+      fileNo++; const path = `ppt/slides/slide${fileNo}.xml`;
+      zip.file(path, suppSlideXml(plan.supp.frame, pages[pi], pi, pages.length, si, sz));
+      const layoutTarget = '../slideLayouts/' + plan.supp.frame.layout.path.split('/').pop();
+      zip.file(relsPath(path), `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n<Relationships xmlns="${NS.pr}"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutTarget}"/></Relationships>`);
+      const ov = ct.createElementNS(NS.ct, 'Override'); ov.setAttribute('PartName', '/' + path); ov.setAttribute('ContentType', 'application/vnd.openxmlformats-officedocument.presentationml.slide+xml'); ct.documentElement.append(ov);
+      let rid; let n = 1000 + fileNo; do { rid = 'rId' + (n++); } while (usedRids.has(rid)); usedRids.add(rid);
+      const rel = presRels.createElementNS(NS.pr, 'Relationship'); rel.setAttribute('Id', rid);
+      rel.setAttribute('Type', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide'); rel.setAttribute('Target', `slides/slide${fileNo}.xml`);
+      presRels.documentElement.append(rel);
+      const sid = pres.createElementNS(NS.p, 'p:sldId'); sid.setAttribute('id', String(++maxId)); sid.setAttributeNS(NS.r, 'r:id', rid);
+      if (anchor && anchor.nextSibling) lst.insertBefore(sid, anchor.nextSibling); else lst.append(sid);
+      anchor = sid;
+      outMap.push({ si, kind: 'supp', page: pi, of: pages.length, tracked: ['2', '3'], newIds: ['3'], warn: pi === 0 ? plan.warn : [] });
+    }
+  }
+  zip.file('ppt/presentation.xml', serialize(pres));
+  zip.file(presRelsPath, serialize(presRels));
+  zip.file('[Content_Types].xml', serialize(ct));
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+  return { blob, outMap };
+}
+function checkOutput(outDeck, outMap){
+  return outMap.map((o, j) => {
+    const warns = [...(o.warn || [])];
+    if (!o.tracked.length) return { ...o, warns, checked: false };
+    const m = getModel(outDeck, j);
+    const rects = occupancy(m, sameSz);
+    for (const id of o.tracked){
+      const s = m.shapes.find(x => x.src === 'slide' && x.id === id); if (!s) continue;
+      const nm = o.newIds.includes(id) ? '보충 설명 상자' : (id === '2' && o.kind === 'supp' ? '제목' : `"${s.name}"`);
+      if (s.x < 0 || s.y < 0 || s.x + s.w > m.cx + 1 || s.y + s.h > m.cy + 1) warns.push(`${nm}가 슬라이드 밖으로 나갑니다.`);
+      if (s.text && s.text.plain.trim()){ const need = measureShape(s, sameSz) / SAFETY * 1.02; if (need > s.h && s.text.body.auto !== 'norm') warns.push(`${nm}의 글자가 상자보다 길어 넘칠 수 있습니다.`); }
+      if (o.newIds.includes(id)){
+        for (const r of rects){ if (r.shape === s || r.shape.id === s.id && r.shape.src === 'slide') continue;
+          const a = interArea(r, s); if (a > 0.01*s.w*s.h) warns.push(`보충 설명 상자가 "${r.shape.name || r.shape.kind}"와 겹칩니다.`); }
+      }
+    }
+    return { ...o, warns: [...new Set(warns)], checked: true };
+  });
+}
+
+/* ========================= AI 해설 ========================= */
+const TYPES = { concept: '핵심 개념', term: '어려운 용어', relation: '개념 간 관계', example: '이해를 돕는 예시' };
+const TYPE_ORDER = ['concept', 'term', 'relation', 'example'];
+async function pageContext(deck, si){
+  const m = getModel(deck, si); const lines = []; const pics = [];
+  const own = m.shapes.filter(s => s.src === 'slide').sort((a, b) => (a.y - b.y) || (a.x - b.x));
+  for (const s of own){
+    if (s.ph && ['dt','sldNum'].includes(s.ph.type)) continue;
+    if (s.text && s.text.plain.trim()){
+      const isT = s.ph && normType(s.ph.type) === 'title';
+      if (isT) lines.unshift(`제목: ${s.text.plain.replace(/\s+/g, ' ').trim()}`);
+      else for (const p of s.text.paras) if (p.text.trim()) lines.push(`${'  '.repeat(p.lvl)}- ${p.text.trim()}${s.ph && s.ph.type === 'ftr' ? ' (바닥글)' : ''}`);
+    }
+    if (s.kind === 'graphicFrame' && s.frame === 'table') lines.push('[표]\n' + s.table.rows.map(r => '| ' + r.cells.filter(c => !c.hMerge).map(c => (c.text ? c.text.plain : '').replace(/\s+/g, ' ')).join(' | ') + ' |').join('\n'));
+    if (s.kind === 'graphicFrame' && (s.frame === 'chart' || s.frame === 'diagram') && s.rel){
+      const d = await deck.pkg.xml(s.rel.target);
+      if (d){
+        if (s.frame === 'chart'){
+          const title = desc(desc(d,'c:title')[0], 'a:t').map(t => t.textContent).join('');
+          const sers = desc(d,'c:ser').slice(0, 6).map(se => { const nm = desc(kid(se,'c:tx'),'c:v').map(v => v.textContent).join(''); const cats = desc(kid(se,'c:cat'),'c:v').slice(0, 10).map(v => v.textContent); const vals = desc(kid(se,'c:val'),'c:v').slice(0, 10).map(v => v.textContent); return `${nm || '계열'}: ${cats.map((c, i) => `${c}=${vals[i] ?? ''}`).join(', ')}`; });
+          lines.push(`[차트] ${title}\n${sers.join('\n')}`);
+        } else lines.push('[도해(SmartArt)] ' + desc(d,'a:t').map(t => t.textContent.trim()).filter(Boolean).join(' / '));
+      }
+    }
+    if (s.kind === 'pic'){ pics.push(s); }
+  }
+  const media = pics.map(p => deck.media.get(p.img)).filter(x => x && x.ok && /png|jpe?g|gif|webp/.test(x.ext));
+  return { text: lines.join('\n'), pics, media, notes: deck.slides[si].notes };
+}
+function buildPrompt(deck, si, ctx, opts){
+  const n = deck.slides.length;
+  const prev = si > 0 ? slideTitle(deck, si-1) : '(없음)', next = si < n-1 ? slideTitle(deck, si+1) : '(없음)';
+  const picLine = ctx.pics.length
+    ? (opts.withImages ? `그림 ${ctx.pics.length}개가 있고, 첨부한 이미지가 그 그림입니다. 그림 속 글자·도표도 읽어서 반영하세요.` : `그림 ${ctx.pics.length}개가 있지만 이번에는 볼 수 없습니다. 대체 텍스트: ${ctx.pics.map(p => p.descr || p.name).join(', ') || '없음'}. 그림 내용을 추측하지 마세요.`)
+    : '그림 없음.';
+  const keep = opts.keep && opts.keep.length ? `\n이미 남겨 둔 항목(겹치지 않게 새 내용 위주로): ${opts.keep.map(k => k.title || k.text.slice(0, 30)).join(' / ')}` : '';
+  return `당신은 대학 강의 PPT의 보충 설명을 쓰는 한국어 조교입니다. 학생이 이 슬라이드 한 장을 이해하도록 돕는 설명 항목을 만듭니다.
+
+[강의 자료] 파일 "${opts.fileName}", 전체 ${n}페이지 중 원본 ${si+1}페이지
+[앞 페이지 제목] ${prev}
+[다음 페이지 제목] ${next}
+
+[이 슬라이드의 원본 내용 — 그대로 옮김]
+${ctx.text || '(글자 없음)'}
+[그림] ${picLine}
+${ctx.notes ? '[발표자 노트]\n' + ctx.notes.slice(0, 1500) : ''}${keep}
+
+작성 규칙:
+- 슬라이드 문장을 그대로 반복하거나 번역만 하지 말고, 이해에 필요한 배경·정의·관계·예시를 보충함.
+- 개조식으로 씀. 문장 끝은 '~임', '~함', '~을 의미', '~의 예시' 같은 형태.
+- 한 항목은 1~2문장, 120자 안팎. title은 짧은 이름(15자 안팎).
+- 영어 핵심 용어는 유지하고 한국어 뜻을 함께 씀. 예: "Bicultural(이중문화)".
+- type 값: concept(핵심 개념), term(어려운 용어), relation(개념 간 관계), example(이해를 돕는 예시). 해당하는 유형만, 전체 4~9개.
+- 표지·목차·질문 슬라이드처럼 설명할 내용이 적으면 1~2개만.
+- 웹 검색을 할 수 없는 환경임. 출처, URL, 책 제목, 통계 수치를 지어내지 말 것. 확실하지 않은 내용은 빼거나 uncertain을 true로 표시.
+
+JSON만 출력:
+{"visual":"그림·도표·표에서 파악한 점 한 문장(없으면 빈 문자열)","items":[{"type":"term","title":"Bicultural(이중문화)","text":"두 문화가 한 사람이나 집단 안에 함께 존재하는 상태를 의미","uncertain":false}]}`;
+}
+const URL_RE = /\bhttps?:\/\/\S+|\bwww\.\S+/gi;
+function normItems(raw, gen){
+  const arr = Array.isArray(raw && raw.items) ? raw.items : [];
+  return arr.map((x, i) => {
+    const type = TYPE_ORDER.includes(x && x.type) ? x.type : 'concept';
+    const title = String((x && x.title) || '').replace(URL_RE, '').trim().slice(0, 80);
+    const text = String((x && x.text) || '').replace(URL_RE, '').replace(/\(\s*\)/g, '').trim();
+    return { id: `g${gen}-${i}-${Math.random().toString(36).slice(2, 7)}`, type, title, text, orig: { title, text }, sel: false, edited: false, uncertain: !!(x && x.uncertain) };
+  }).filter(x => x.text);
+}
+
+/* ========================= 앱 상태 ========================= */
+const S = { deck: null, file: null, pages: {}, reviewed: [], batch: 0, page: 0, view: 'upload', settings: { mode: 'auto', sz: 20 }, pageMode: {}, caps: {}, output: null, plans: null, gen: 0 };
+const B = 5;
+const nBatches = () => Math.ceil(S.deck.slides.length / B);
+const batchPages = b => { const out = []; for (let i = b*B; i < Math.min(S.deck.slides.length, b*B + B); i++) out.push(i); return out; };
+const pg = i => S.pages[i] || (S.pages[i] = { status: 'idle', items: [], visual: '', err: '', imgs: 0 });
+function storeKey(){ return S.file ? `ppt-helper:${S.file.name}:${S.file.size}:${S.deck.slides.length}` : null; }
+function save(){
+  try { const k = storeKey(); if (!k) return;
+    const pages = {}; for (const [i, p] of Object.entries(S.pages)) pages[i] = { status: p.status === 'done' ? 'done' : 'idle', items: p.items, visual: p.visual, imgs: p.imgs };
+    localStorage.setItem(k, JSON.stringify({ pages, reviewed: S.reviewed, batch: S.batch, page: S.page, settings: S.settings, pageMode: S.pageMode })); } catch {}
+}
+function restore(){
+  try { const k = storeKey(); const raw = k && localStorage.getItem(k); if (!raw) return false;
+    const d = JSON.parse(raw); Object.assign(S, { pages: d.pages || {}, reviewed: d.reviewed || [], batch: d.batch || 0, page: d.page || 0, settings: { ...S.settings, ...(d.settings || {}) }, pageMode: d.pageMode || {} });
+    return Object.keys(S.pages).length > 0; } catch { return false; }
+}
+function invalidateOutput(){ S.output = null; S.plans = null; }
+
+/* ---------- 환경 점검 ---------- */
+async function checkCaps(){
+  const ul = $('#caps');
+  const row = (st, title, sub) => h('li', null, h('span', { class: 'st ' + st }, { ok: '✓', no: '✕', part: '△', wait: '…' }[st]), h('div', null, title, sub ? h('small', null, sub) : null));
+  const draw = () => { ul.replaceChildren(
+    row('ok', 'PPTX 읽기·원본 미리보기', '브라우저 안에서 파일을 풀어 슬라이드 순서·글자·그림·표를 읽고 그립니다. 차트·SmartArt는 자리만 표시하고 내용은 글자로 읽습니다.'),
+    row(S.caps.sample == null ? 'wait' : S.caps.sample ? 'ok' : 'no', 'Claude 해설 생성', S.caps.sample == null ? '확인 중' : S.caps.sample ? '처음 쓸 때 사용 허락 창이 뜹니다. 사용량은 보는 사람의 Claude 계정에서 나갑니다.' : '이 화면에서는 Claude에 연결할 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.'),
+    row(S.caps.images == null ? 'wait' : S.caps.images ? 'ok' : 'part', '그림 분석', S.caps.images == null ? '확인 중' : S.caps.images ? '슬라이드 속 그림을 Claude에 보내 함께 분석합니다.' : '이 계정의 Artifact에서는 이미지를 Claude에 보낼 수 없습니다. 글자·표·차트 데이터·그림 설명문만으로 분석하고, 그림이 있는 페이지는 따로 표시합니다.'),
+    row('no', '실제 웹 검색', 'Artifact 안의 Claude는 인터넷을 검색할 수 없습니다. 그래서 모든 설명에 "AI 해설"이라고 표시하고, 출처·URL은 만들지 않습니다.'),
+    row('ok', '기존 PPTX 수정·결과 렌더링', '원본 XML을 직접 고쳐 글자 상자를 편집 가능한 상태로 유지합니다. 결과 파일을 다시 읽어 미리보기를 그립니다.'),
+    row(S.caps.downloads == null ? 'wait' : S.caps.downloads ? 'ok' : 'no', '파일 다운로드', S.caps.downloads == null ? '확인 중' : S.caps.downloads ? '저장 확인 창을 거쳐 .pptx로 내려받습니다.' : '이 화면에서는 파일 저장을 쓸 수 없습니다.')
+  ); };
+  draw();
+  const sample = await useCap('sample'); S.sample = sample; S.caps.sample = !!sample;
+  let lim = null; if (sample && sample.limits) lim = await sample.limits().catch(() => null);
+  S.caps.images = !!(lim && lim.images); S.imgLimits = lim && lim.images;
+  draw();
+  const dl = await useCap('downloads'); S.dl = dl; S.caps.downloads = !!dl;
+  draw();
+}
+
+/* ---------- 업로드 ---------- */
+async function onFile(file){
+  const err = $('#uperr'); err.hidden = true;
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'ppt'){ err.textContent = '구형 .ppt 파일은 바로 읽을 수 없습니다. PowerPoint에서 "다른 이름으로 저장 → PowerPoint 프레젠테이션(*.pptx)"으로 바꾼 뒤 올려 주세요.'; err.hidden = false; return; }
+  if (ext !== 'pptx'){ err.textContent = '.pptx 파일만 올릴 수 있습니다.'; err.hidden = false; return; }
+  try {
+    toast('파일을 읽는 중입니다…');
+    const buf = await file.arrayBuffer();
+    const deck = await loadDeck(buf.slice(0));
+    if (!deck.slides.length) throw new Error('슬라이드가 없습니다.');
+    await preloadLayouts(deck);
+    try { await document.fonts.ready; } catch {}
+    Object.assign(S, { deck, file: { name: file.name, size: file.size, buf }, pages: {}, reviewed: [], batch: 0, page: 0, pageMode: {}, output: null, plans: null });
+    const had = restore();
+    S.view = 'review'; renderAll();
+    toast(had ? '이 파일의 이전 검토 내용을 불러왔습니다.' : `${deck.slides.length}페이지를 읽었습니다. 1~5페이지부터 분석합니다.`);
+    analyzeBatch(S.batch);
+  } catch (e){
+    err.textContent = '파일을 읽지 못했습니다: ' + (e && e.message || e) + ' PowerPoint에서 다시 저장한 .pptx로 시도해 보세요.'; err.hidden = false;
+  }
+}
+
+/* ---------- 분석 ---------- */
+let running = 0; const queue = [];
+function enqueue(fn){ return new Promise((res, rej) => { queue.push({ fn, res, rej }); pump(); }); }
+function pump(){ while (running < 2 && queue.length){ const { fn, res, rej } = queue.shift(); running++; fn().then(res, rej).finally(() => { running--; pump(); }); } }
+function analyzeBatch(b){ for (const i of batchPages(b)){ const p = pg(i); if (p.status === 'idle' || p.status === 'error') analyzePage(i, false); } }
+async function analyzePage(i, regen){
+  const p = pg(i); p.status = 'loading'; p.err = ''; renderReview();
+  try {
+    await enqueue(async () => {
+      if (!S.sample) throw { code: 'no_sample', message: 'Claude에 연결할 수 없습니다.' };
+      const ctx = await pageContext(S.deck, i);
+      const keep = regen ? p.items.filter(x => x.sel || x.edited) : [];
+      let images = null;
+      if (S.caps.images && ctx.media.length){ const max = Math.min(S.imgLimits.maxCount || 1, 4); images = ctx.media.filter(m => m.blob.size <= (S.imgLimits.maxInputBytes || 5e6)).slice(0, max).map(m => m.blob); if (!images.length) images = null; }
+      const opts = { fileName: S.file.name, keep, withImages: !!images };
+      let res;
+      try { res = await S.sample.json(buildPrompt(S.deck, i, ctx, opts), { images: images || undefined, cache: regen ? false : undefined }); }
+      catch (e){
+        if (images && e && (e.code === 'images_unavailable' || e.code === 'image_rejected')){ S.caps.images = false; images = null; opts.withImages = false;
+          res = await S.sample.json(buildPrompt(S.deck, i, ctx, opts), { cache: regen ? false : undefined }); }
+        else throw e;
+      }
+      S.gen++;
+      const fresh = normItems(res, S.gen);
+      if (regen){
+        const keepTitles = new Set(keep.map(k => (k.title || '').toLowerCase()));
+        p.items = [...keep, ...fresh.filter(f => !keepTitles.has(f.title.toLowerCase()))];
+      } else p.items = fresh;
+      p.items = TYPE_ORDER.flatMap(t => p.items.filter(x => x.type === t));
+      p.visual = String(res && res.visual || '').replace(URL_RE, '').trim();
+      p.imgs = ctx.pics.length; p.sawImgs = !!images;
+      p.status = 'done';
+    });
+  } catch (e){
+    p.status = 'error';
+    const code = e && e.code;
+    p.err = code === 'not_granted' ? 'Claude 사용을 허락하지 않아 해설을 만들 수 없습니다. 다시 생성을 누르면 다시 묻습니다.'
+      : code === 'rate_limited' ? '요청이 많아 잠시 막혔습니다. 조금 뒤 다시 생성을 눌러 주세요.'
+      : code === 'invalid_json' ? '응답 형식이 맞지 않았습니다. 다시 생성을 눌러 주세요.'
+      : (e && e.message) || '해설을 만들지 못했습니다.';
+  }
+  invalidateOutput(); save(); renderReview();
+}
+
+/* ========================= 화면 그리기 ========================= */
+function renderAll(){
+  for (const v of ['upload', 'review', 'output']){ $('#v-' + v).hidden = S.view !== v; const b = $('#st-' + v); if (S.view === v) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); }
+  $('#st-review').disabled = !S.deck; $('#st-output').disabled = !S.deck;
+  $('#fileinfo').textContent = S.deck ? `${S.file.name} · 전체 ${S.deck.slides.length}페이지` : '';
+  if (S.view === 'review') renderReview();
+  if (S.view === 'output') renderOutput();
+}
+const selCount = () => Object.values(S.pages).reduce((n, p) => n + p.items.filter(x => x.sel).length, 0);
+function renderReview(){
+  if (S.view !== 'review' || !S.deck) return;
+  const nb = nBatches(), n = S.deck.slides.length;
+  const unlocked = Math.min(nb - 1, S.reviewed.length);
+  const tabs = $('#btabs'); tabs.replaceChildren();
+  for (let b = 0; b < nb; b++){
+    const ps = batchPages(b);
+    const t = h('button', { class: 'tab', type: 'button', role: 'tab', 'aria-selected': String(b === S.batch), disabled: b > unlocked && !S.reviewed.includes(b),
+      onclick: () => { S.batch = b; S.page = ps[0]; analyzeBatch(b); save(); renderReview(); } },
+      h('span', { class: 'dot' + (S.reviewed.includes(b) ? ' done' : b === S.batch ? ' cur' : '') }), h('span', { class: 'num' }, `${ps[0]+1}–${ps[ps.length-1]+1}`));
+    tabs.append(t);
+  }
+  const ps = batchPages(S.batch);
+  if (!ps.includes(S.page)) S.page = ps[0];
+  const ready = ps.filter(i => pg(i).status === 'done').length;
+  $('#progress').replaceChildren('원본 ', h('b', { class: 'num' }, `${S.page+1} / ${n}`), '페이지 · 묶음 ', h('b', { class: 'num' }, `${S.batch+1}/${nb}`),
+    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개');
+  const last = S.batch === nb - 1;
+  const nx = $('#next');
+  nx.textContent = last ? `${ps[0]+1}–${ps[ps.length-1]+1}페이지 검토 완료 → 반영 단계로` : `${ps[0]+1}–${ps[ps.length-1]+1}페이지 검토 완료 → ${batchPages(S.batch+1)[0]+1}–${batchPages(S.batch+1).slice(-1)[0]+1}페이지 분석`;
+  nx.onclick = () => {
+    if (!S.reviewed.includes(S.batch)) S.reviewed.push(S.batch);
+    if (last){ S.view = 'output'; save(); renderAll(); return; }
+    S.batch++; S.page = batchPages(S.batch)[0]; analyzeBatch(S.batch); save(); renderReview();
+  };
+  // 썸네일
+  const th = $('#thumbs'); th.replaceChildren();
+  for (const i of ps){
+    const p = pg(i); const nsel = p.items.filter(x => x.sel).length;
+    const b = h('button', { class: 'thumb', type: 'button', role: 'tab', 'aria-selected': String(i === S.page), onclick: () => { S.page = i; save(); renderReview(); } },
+      renderSlide(S.deck, getModel(S.deck, i), 132),
+      h('span', { class: 'lbl' }, h('span', { class: 'n num' }, `p.${i+1}`), h('span', null, p.status === 'loading' ? '분석 중' : p.status === 'error' ? '오류' : p.status === 'done' ? (nsel ? `${nsel}개 선택` : '검토 전') : '대기')));
+    th.append(b);
+  }
+  renderStage(); renderPanel();
+}
+function renderStage(){
+  const st = $('#stage'); const i = S.page;
+  const w = Math.max(200, st.clientWidth - 22 || 600);
+  st.replaceChildren(h('div', { class: 'cap' }, h('span', null, h('span', { class: 'tag orig' }, '원본'), ' ', `원본 ${i+1}페이지 / 전체 ${S.deck.slides.length}페이지`), h('span', null, slideTitle(S.deck, i))),
+    renderSlide(S.deck, getModel(S.deck, i), w));
+  const m = getModel(S.deck, i);
+  const txt = m.shapes.filter(s => s.src === 'slide' && s.text && s.text.plain.trim()).sort((a, b) => a.y - b.y || a.x - b.x).map(s => s.text.plain.trim()).join('\n\n');
+  $('#srctext').textContent = txt || '(이 슬라이드에는 편집 가능한 글자가 없습니다. 그림 속 글자는 원본 그대로 둡니다.)';
+}
+function itemEl(i, it){
+  const p = pg(i);
+  const box = h('div', { class: 'item' + (it.sel ? ' sel' : '') });
+  const cb = h('input', { type: 'checkbox', id: 'cb-' + it.id, 'aria-label': (it.title || it.text).slice(0, 40) + ' 선택' });
+  cb.checked = it.sel;
+  cb.onchange = () => { it.sel = cb.checked; box.classList.toggle('sel', it.sel); invalidateOutput(); save(); refreshCounts(); };
+  const body = h('div', { style: { minWidth: 0 } });
+  const view = () => {
+    body.replaceChildren(
+      it.title ? h('div', { class: 'it-title' }, it.title) : null,
+      h('div', { class: 'it-text' }, it.text),
+      h('div', { class: 'it-flags' }, h('span', { class: 'flag' }, 'AI 해설 · 웹 검색 확인 안 됨'), it.edited ? h('span', { class: 'flag edit' }, '직접 수정함') : null, it.uncertain ? h('span', { class: 'flag unc' }, 'AI가 확실하지 않다고 표시') : null));
+  };
+  const edit = () => {
+    const ti = h('input', { type: 'text', id: 'ti-' + it.id, value: it.title, 'aria-label': '항목 이름' });
+    const ta = h('textarea', { id: 'ta-' + it.id, 'aria-label': '설명 내용' }); ta.value = it.text;
+    const upd = () => { it.title = ti.value; it.text = ta.value; it.edited = it.title !== it.orig.title || it.text !== it.orig.text; if (!it.sel){ it.sel = true; cb.checked = true; box.classList.add('sel'); } invalidateOutput(); save(); refreshCounts(); };
+    ti.oninput = upd; ta.oninput = upd;
+    body.replaceChildren(h('div', { class: 'edit-area' }, ti, ta, h('div', { class: 'tools' },
+      h('button', { class: 'btn small', type: 'button', onclick: () => { view(); btn.textContent = '수정'; editing = false; } }, '완료'),
+      h('button', { class: 'btn small ghost', type: 'button', onclick: () => { it.title = it.orig.title; it.text = it.orig.text; it.edited = false; invalidateOutput(); save(); edit(); } }, 'AI 원문으로 되돌리기'))));
+    ta.focus();
+  };
+  let editing = false;
+  const btn = h('button', { class: 'btn small ghost', type: 'button', onclick: () => { editing = !editing; if (editing){ edit(); btn.textContent = '닫기'; } else { view(); btn.textContent = '수정'; } } }, '수정');
+  view();
+  box.append(cb, body, btn);
+  return box;
+}
+function refreshCounts(){
+  const ps = batchPages(S.batch); const n = S.deck.slides.length, nb = nBatches();
+  const ready = ps.filter(i => pg(i).status === 'done').length;
+  $('#progress').replaceChildren('원본 ', h('b', { class: 'num' }, `${S.page+1} / ${n}`), '페이지 · 묶음 ', h('b', { class: 'num' }, `${S.batch+1}/${nb}`),
+    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개');
+  const lbls = document.querySelectorAll('#thumbs .thumb');
+  ps.forEach((i, k) => { const p = pg(i); const nsel = p.items.filter(x => x.sel).length; const l = lbls[k] && lbls[k].querySelector('.lbl span:last-child'); if (l && p.status === 'done') l.textContent = nsel ? `${nsel}개 선택` : '검토 전'; });
+}
+function renderPanel(){
+  const i = S.page, p = pg(i); const panel = $('#panel');
+  const head = h('div', { class: 'ph-head' }, h('div', { class: 'eyebrow num' }, `원본 ${i+1}페이지 · 보충 설명`), h('h2', null, slideTitle(S.deck, i)));
+  const tools = h('div', { class: 'tools' },
+    h('button', { class: 'btn small', type: 'button', disabled: !p.items.length, onclick: () => { p.items.forEach(x => x.sel = true); invalidateOutput(); save(); renderReview(); } }, '전체 선택'),
+    h('button', { class: 'btn small', type: 'button', disabled: !p.items.length, onclick: () => { p.items.forEach(x => x.sel = false); invalidateOutput(); save(); renderReview(); } }, '선택 해제'),
+    h('button', { class: 'btn small', type: 'button', disabled: p.status === 'loading', onclick: () => analyzePage(i, true) }, '이 페이지 다시 생성'));
+  const parts = [head, tools];
+  const m = getModel(S.deck, i);
+  const nPics = m.shapes.filter(s => s.src === 'slide' && s.kind === 'pic').length;
+  if (nPics && p.status === 'done' && !p.sawImgs) parts.push(h('div', { class: 'note warn' }, `이 페이지에는 그림 ${nPics}개가 있지만 이 환경에서는 그림을 Claude에 보낼 수 없어 글자 정보만으로 설명했습니다. 그림 속 내용은 직접 확인해 주세요.`));
+  if (p.visual) parts.push(h('div', { class: 'note' }, h('b', null, '시각 자료: '), p.visual));
+  if (p.status === 'loading') parts.push(h('div', { class: 'loading' }, h('span', { class: 'spin' }), p.items.length ? '다시 생성하는 중입니다. 선택·수정한 항목은 그대로 남습니다.' : '이 페이지의 보충 설명을 만드는 중입니다…'));
+  if (p.status === 'error') parts.push(h('div', { class: 'errbox' }, p.err));
+  if (p.status === 'idle' && !p.items.length) parts.push(h('div', { class: 'note' }, '아직 분석하지 않았습니다.', ' ', h('button', { class: 'btn small', type: 'button', onclick: () => analyzePage(i, false) }, '지금 분석')));
+  for (const t of TYPE_ORDER){
+    const list = p.items.filter(x => x.type === t); if (!list.length) continue;
+    parts.push(h('div', { class: 'group' }, h('h3', null, TYPES[t]), h('div', { class: 'items' }, list.map(it => itemEl(i, it)))));
+  }
+  if (p.status === 'done' && !p.items.length) parts.push(h('div', { class: 'note' }, '이 페이지에는 보충할 내용이 없다고 판단했습니다. 필요하면 다시 생성해 보세요.'));
+  panel.replaceChildren(...parts);
+}
+
+/* ---------- 반영·다운로드 화면 ---------- */
+function selectedFor(i){ return pg(i).items.filter(x => x.sel); }
+function computePlans(){
+  const plans = {};
+  for (let i = 0; i < S.deck.slides.length; i++){
+    const items = selectedFor(i); if (!items.length) continue;
+    plans[i] = planPage(S.deck, i, items, { mode: S.pageMode[i] || S.settings.mode, sz: S.settings.sz });
+  }
+  return plans;
+}
+function placeText(plan){
+  const out = [];
+  if (plan.box){
+    const cy = S.deck.cy; const top = Math.round(plan.box.y/cy*100), bot = Math.round((plan.box.y + plan.box.h)/cy*100);
+    out.push(h('div', null, h('span', { class: 'k' }, `원본 슬라이드 안 ${plan.inOrig.length}개`), ` · 빈 공간(위에서 ${top}~${bot}% 지점)`));
+    for (const fc of plan.fontChanges) out.push(h('div', null, `본문 글자 ${fc.before.join('/')}pt → ${fc.after.join('/')}pt로 줄임`));
+    if (plan.resized.length && !plan.fontChanges.length) out.push(h('div', null, '본문 상자 크기만 실제 글자 높이에 맞춤(글자 크기는 그대로)'));
+  }
+  if (plan.supp && plan.supp.pages.length) out.push(h('div', null, h('span', { class: 'k' }, `보충 슬라이드 ${plan.supp.pages.length}장`), ` · 원본 ${plan.si+1}페이지 바로 뒤, ${plan.rest.length}개 항목`));
+  for (const w of plan.warn) out.push(h('div', { class: 'warn' }, w));
+  return h('div', { class: 'pl' }, out);
+}
+function renderOutput(){
+  $('#mode-auto').checked = S.settings.mode === 'auto'; $('#mode-supp').checked = S.settings.mode === 'supp';
+  $('#boxsz').value = String(S.settings.sz);
+  const tbl = $('#plan'); const sel = []; for (let i = 0; i < S.deck.slides.length; i++) if (selectedFor(i).length) sel.push(i);
+  const total = sel.reduce((n, i) => n + selectedFor(i).length, 0);
+  $('#plansum').textContent = sel.length ? `선택한 설명 ${total}개를 원본 ${sel.length}개 페이지에 넣습니다. 원본 문구는 지우거나 바꾸지 않습니다.` : '아직 선택한 설명이 없습니다. 2단계에서 필요한 항목에 체크해 주세요.';
+  $('#build').disabled = !sel.length;
+  if (!S.plans){ $('#buildmsg').textContent = '배치를 계산하는 중…'; tbl.replaceChildren(); setTimeout(() => { if (!S.plans){ S.plans = computePlans(); } drawPlan(); }, 30); }
+  else drawPlan();
+  function drawPlan(){
+    $('#buildmsg').textContent = '';
+    tbl.replaceChildren(h('thead', null, h('tr', null, h('th', null, '원본'), h('th', null, '선택한 설명'), h('th', null, '예상 삽입 위치'), h('th', null, '이 페이지 배치'))));
+    const tb = h('tbody');
+    for (const i of sel){
+      const plan = S.plans[i]; if (!plan) continue;
+      const mode = h('select', { id: 'pm-' + i, 'aria-label': `원본 ${i+1}페이지 배치 방식` }, h('option', { value: '' }, '전체 설정 따름'), h('option', { value: 'auto' }, '원본 여백 먼저'), h('option', { value: 'supp' }, '보충 슬라이드에만'));
+      mode.value = S.pageMode[i] || '';
+      mode.onchange = () => { if (mode.value) S.pageMode[i] = mode.value; else delete S.pageMode[i]; invalidateOutput(); save(); renderOutput(); };
+      tb.append(h('tr', null,
+        h('td', null, h('div', { class: 'num', style: { fontWeight: 600 } }, `p.${i+1}`), h('div', { style: { fontSize: '13px', color: 'var(--muted)', maxWidth: '200px' } }, plan.title)),
+        h('td', null, h('ul', null, selectedFor(i).map(it => h('li', null, it.title ? h('b', null, it.title + ': ') : null, it.text)))),
+        h('td', null, placeText(plan)),
+        h('td', null, mode)));
+    }
+    tbl.append(tb);
+  }
+  renderResults();
+}
+function renderResults(){
+  const wrap = $('#resultwrap');
+  if (!S.output){ wrap.hidden = true; return; }
+  wrap.hidden = false;
+  const o = S.output; const res = $('#results'); res.replaceChildren();
+  const nw = o.checks.filter(c => c.warns.length).length;
+  $('#ressum').textContent = `결과 ${o.deck.slides.length}페이지 (원본 ${S.deck.slides.length} + 보충 ${o.deck.slides.length - S.deck.slides.length}) · ${nw ? `확인 필요 ${nw}페이지` : '배치 문제 없음'}`;
+  o.checks.forEach((c, j) => {
+    if (!c.changed && c.kind === 'orig') return;
+    const label = c.kind === 'orig' ? `출력 ${j+1}페이지 · 원본 ${c.si+1}페이지` : `출력 ${j+1}페이지 · 원본 ${c.si+1}페이지 보충 ${c.of > 1 ? `${c.page+1}/${c.of}` : ''}`;
+    const holder = h('div', { style: { minWidth: 0 } });
+    res.append(h('div', { class: 'rcard' + (c.kind === 'supp' ? ' supp' : '') },
+      h('div', { class: 'cap' }, h('b', { class: 'num' }, label), c.warns.length ? h('span', { style: { color: 'var(--warn)' } }, `확인 필요 ${c.warns.length}`) : h('span', { class: 'ok' }, '잘림·겹침 없음')),
+      holder,
+      c.warns.length ? h('ul', { class: 'w' }, c.warns.map(w => h('li', null, w))) : null));
+    holder.append(renderSlide(o.deck, getModel(o.deck, j), Math.max(200, holder.clientWidth || 360), { mark: true, marks: new Set(c.newIds) }));
+  });
+  const untouched = o.checks.filter(c => c.kind === 'orig' && !c.changed).length;
+  if (untouched) res.append(h('p', { class: 'note', style: { alignSelf: 'start' } }, `보충 설명을 넣지 않은 원본 ${untouched}페이지는 그대로 두었습니다.`));
+}
+async function build(){
+  const btn = $('#build'); btn.disabled = true; $('#buildmsg').textContent = '결과 파일을 만드는 중…';
+  try {
+    if (!S.plans) S.plans = computePlans();
+    const { blob, outMap } = await buildPptx(S.file.buf.slice(0), S.deck, S.plans, S.settings.sz);
+    const outDeck = await loadDeck(await blob.arrayBuffer());
+    const checks = checkOutput(outDeck, outMap);
+    S.output = { blob, deck: outDeck, checks };
+    $('#buildmsg').textContent = '';
+    renderResults();
+    $('#resultwrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e){
+    $('#buildmsg').textContent = '만들지 못했습니다: ' + (e && e.message || e);
+  } finally { btn.disabled = false; }
+}
+async function download(){
+  if (!S.output) return;
+  const name = S.file.name.replace(/\.pptx$/i, '') + '_보충설명.pptx';
+  if (S.dl){
+    try { await S.dl.save({ filename: name, data: S.output.blob }); toast(`${name} 저장을 요청했습니다.`); }
+    catch (e){ const c = e && e.code; toast(c === 'declined' ? '저장을 취소했습니다.' : c === 'rate_limited' ? '이미 저장 창이 열려 있습니다. 잠시 뒤 다시 눌러 주세요.' : '이 화면에서는 저장할 수 없습니다: ' + (e && e.message || c)); }
+  } else {
+    const a = h('a', { href: URL.createObjectURL(S.output.blob), download: name }); document.body.append(a); a.click(); a.remove();
+    toast('브라우저 다운로드를 시작했습니다. 아무 일도 없으면 claude.ai에서 이 페이지를 열어 주세요.');
+  }
+}
+
+/* ---------- 이벤트 ---------- */
+$('#file').addEventListener('change', e => onFile(e.target.files[0]));
+const drop = $('#drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); onFile(e.dataTransfer.files[0]); });
+$('#st-upload').onclick = () => { S.view = 'upload'; renderAll(); };
+$('#st-review').onclick = () => { if (S.deck){ S.view = 'review'; renderAll(); } };
+$('#st-output').onclick = () => { if (S.deck){ S.view = 'output'; renderAll(); } };
+for (const id of ['mode-auto', 'mode-supp']) $('#' + id).addEventListener('change', e => { S.settings.mode = e.target.value; invalidateOutput(); save(); renderOutput(); });
+$('#boxsz').addEventListener('change', e => { S.settings.sz = +e.target.value; invalidateOutput(); save(); renderOutput(); });
+$('#build').onclick = build; $('#download').onclick = download;
+let rsT; new ResizeObserver(() => { clearTimeout(rsT); rsT = setTimeout(() => { if (S.view === 'review' && S.deck) renderStage(); }, 150); }).observe($('#stage'));
+checkCaps();
+renderAll();
+</script>
