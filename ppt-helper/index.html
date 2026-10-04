@@ -110,6 +110,10 @@ details.src pre{white-space:pre-wrap;font:inherit;margin:8px 0 0;max-height:260p
 .flag{font-size:11px;padding:0 6px;border-radius:4px;background:var(--bg);color:var(--muted)}
 .flag.edit{background:var(--teal-soft);color:var(--teal)}
 .flag.unc{background:var(--warn-soft);color:var(--warn)}
+.flag.web{background:var(--teal-soft);color:var(--teal)}
+.srcs{margin:4px 0 0;padding-left:18px;font-size:13px}
+.srcs a{color:var(--teal);overflow-wrap:anywhere}
+.srcs .host{color:var(--muted);font-size:12px}
 .edit-area{display:grid;gap:6px;margin-top:6px}
 .edit-area input,.edit-area textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel)}
 .edit-area textarea{min-height:84px;resize:vertical}
@@ -176,6 +180,7 @@ table.plan{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
       <input id="file" type="file" accept=".pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden>
     </label>
     <div id="uperr" class="errbox" hidden></div>
+    <div class="card" id="conn"></div>
     <div class="cols">
       <div class="card">
         <h2>진행 순서</h2>
@@ -226,6 +231,7 @@ table.plan{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
         <label>보충 설명 글자 크기
           <select id="boxsz"><option value="20">20pt</option><option value="22">22pt</option><option value="24">24pt</option></select>
         </label>
+        <label><input type="checkbox" id="srcon"> 웹 출처가 있는 설명은 끝에 사이트 이름 표시</label>
       </div>
     </div>
     <div class="card">
@@ -898,7 +904,8 @@ function paginate(chunks, frame, M, label){
 }
 function planPage(deck, si, items, opts){
   const model = getModel(deck, si);
-  const chunks = items.map(it => ({ id: it.id, type: it.type, title: (it.title || '').trim(), text: (it.text || '').trim() })).filter(c => c.text || c.title);
+  const chunks = items.map(it => ({ id: it.id, type: it.type, title: (it.title || '').trim(),
+    text: (it.text || '').trim() + (opts.src && it.sources && it.sources.length ? '\n출처: ' + [...new Set(it.sources.map(z => hostOf(z.url)))].join(', ') : '') })).filter(c => c.text || c.title);
   const res = { si, title: slideTitle(deck, si), scale: 1, box: null, inOrig: [], rest: chunks, resized: [], fontChanges: [], supp: null, warn: [], before: [] };
   if (!chunks.length) return res;
   const fam = themeFam(model.ctx);
@@ -1107,15 +1114,26 @@ async function pageContext(deck, si){
     }
     if (s.kind === 'pic'){ pics.push(s); }
   }
-  const media = pics.map(p => deck.media.get(p.img)).filter(x => x && x.ok && /png|jpe?g|gif|webp/.test(x.ext));
-  return { text: lines.join('\n'), pics, media, notes: deck.slides[si].notes };
+  const media = pics.map(p => deck.media.get(p.img)).filter(x => x && x.ok);
+  const unread = pics.filter(p => { const m = deck.media.get(p.img); return !m || !m.ok; }).length;
+  return { text: lines.join('\n'), pics, media, unread, notes: deck.slides[si].notes };
 }
 function buildPrompt(deck, si, ctx, opts){
   const n = deck.slides.length;
   const prev = si > 0 ? slideTitle(deck, si-1) : '(없음)', next = si < n-1 ? slideTitle(deck, si+1) : '(없음)';
   const picLine = ctx.pics.length
-    ? (opts.withImages ? `그림 ${ctx.pics.length}개가 있고, 첨부한 이미지가 그 그림입니다. 그림 속 글자·도표도 읽어서 반영하세요.` : `그림 ${ctx.pics.length}개가 있지만 이번에는 볼 수 없습니다. 대체 텍스트: ${ctx.pics.map(p => p.descr || p.name).join(', ') || '없음'}. 그림 내용을 추측하지 마세요.`)
+    ? (opts.withImages ? `그림 ${ctx.pics.length}개가 있고, 첨부한 이미지 ${opts.withImages}장이 이 슬라이드에 들어 있는 그림입니다(슬라이드 위→아래 순서). 그림 속 글자·도표·사진 내용을 읽고 설명에 반영하세요.${ctx.unread ? ` 나머지 ${ctx.unread}개는 형식(EMF 등) 때문에 첨부하지 못했으니 추측하지 마세요.` : ''}` : `그림 ${ctx.pics.length}개가 있지만 이번에는 볼 수 없습니다. 대체 텍스트: ${ctx.pics.map(p => p.descr || p.name).join(', ') || '없음'}. 그림 내용을 추측하지 마세요.`)
     : '그림 없음.';
+  const searchRules = opts.web
+    ? `- web_search 도구로 이 슬라이드의 핵심 주제를 1~3번 실제로 검색해 보충 내용을 확인함. 검색어는 영어 원어 용어 위주로 씀.
+- 각 항목의 sources에는 이번 검색 결과로 실제로 받은 페이지의 url과 title만 넣음. 검색으로 확인하지 못한 항목은 sources를 빈 배열로 둠. URL을 기억이나 추측으로 쓰지 않음.
+- 통계 수치·연도·고유명사는 검색 결과에서 확인한 것만 씀. 확실하지 않은 내용은 빼거나 uncertain을 true로 표시.`
+    : `- 웹 검색을 할 수 없는 환경임. 출처, URL, 책 제목, 통계 수치를 지어내지 말 것. 확실하지 않은 내용은 빼거나 uncertain을 true로 표시.`;
+  const outFmt = opts.web
+    ? `검색을 마친 뒤, 마지막에 아래 형식의 JSON 하나만 \`\`\`json 코드 블록으로 출력:
+{"visual":"그림·도표·표에서 읽은 내용 한두 문장(없으면 빈 문자열)","items":[{"type":"term","title":"Bicultural(이중문화)","text":"두 문화가 한 사람이나 집단 안에 함께 존재하는 상태를 의미","uncertain":false,"sources":[{"url":"검색 결과로 받은 URL","title":"페이지 제목"}]}]}`
+    : `JSON만 출력:
+{"visual":"그림·도표·표에서 파악한 점 한 문장(없으면 빈 문자열)","items":[{"type":"term","title":"Bicultural(이중문화)","text":"두 문화가 한 사람이나 집단 안에 함께 존재하는 상태를 의미","uncertain":false}]}`;
   const keep = opts.keep && opts.keep.length ? `\n이미 남겨 둔 항목(겹치지 않게 새 내용 위주로): ${opts.keep.map(k => k.title || k.text.slice(0, 30)).join(' / ')}` : '';
   return `당신은 대학 강의 PPT의 보충 설명을 쓰는 한국어 조교입니다. 학생이 이 슬라이드 한 장을 이해하도록 돕는 설명 항목을 만듭니다.
 
@@ -1135,24 +1153,30 @@ ${ctx.notes ? '[발표자 노트]\n' + ctx.notes.slice(0, 1500) : ''}${keep}
 - 영어 핵심 용어는 유지하고 한국어 뜻을 함께 씀. 예: "Bicultural(이중문화)".
 - type 값: concept(핵심 개념), term(어려운 용어), relation(개념 간 관계), example(이해를 돕는 예시). 해당하는 유형만, 전체 4~9개.
 - 표지·목차·질문 슬라이드처럼 설명할 내용이 적으면 1~2개만.
-- 웹 검색을 할 수 없는 환경임. 출처, URL, 책 제목, 통계 수치를 지어내지 말 것. 확실하지 않은 내용은 빼거나 uncertain을 true로 표시.
+${searchRules}
 
-JSON만 출력:
-{"visual":"그림·도표·표에서 파악한 점 한 문장(없으면 빈 문자열)","items":[{"type":"term","title":"Bicultural(이중문화)","text":"두 문화가 한 사람이나 집단 안에 함께 존재하는 상태를 의미","uncertain":false}]}`;
+${outFmt}`;
 }
 const URL_RE = /\bhttps?:\/\/\S+|\bwww\.\S+/gi;
-function normItems(raw, gen){
+function normUrl(u){ try { const x = new URL(String(u)); return (x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/+$/, '') + x.search).toLowerCase(); } catch { return ''; } }
+const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+function normItems(raw, gen, seen){
   const arr = Array.isArray(raw && raw.items) ? raw.items : [];
   return arr.map((x, i) => {
     const type = TYPE_ORDER.includes(x && x.type) ? x.type : 'concept';
     const title = String((x && x.title) || '').replace(URL_RE, '').trim().slice(0, 80);
     const text = String((x && x.text) || '').replace(URL_RE, '').replace(/\(\s*\)/g, '').trim();
-    return { id: `g${gen}-${i}-${Math.random().toString(36).slice(2, 7)}`, type, title, text, orig: { title, text }, sel: false, edited: false, uncertain: !!(x && x.uncertain) };
+    // 출처는 이번 응답의 웹 검색 결과에 실제로 있던 URL만 남긴다(지어낸 URL 차단)
+    const sources = [];
+    if (seen) for (const src of (Array.isArray(x && x.sources) ? x.sources : [])){
+      const hit = seen.get(normUrl(src && src.url)); if (hit && !sources.some(z => z.url === hit.url)) sources.push(hit);
+    }
+    return { id: `g${gen}-${i}-${Math.random().toString(36).slice(2, 7)}`, type, title, text, orig: { title, text }, sel: false, edited: false, uncertain: !!(x && x.uncertain), sources, web: !!seen };
   }).filter(x => x.text);
 }
 
 /* ========================= 앱 상태 ========================= */
-const S = { deck: null, file: null, pages: {}, reviewed: [], batch: 0, page: 0, view: 'upload', settings: { mode: 'auto', sz: 20 }, pageMode: {}, caps: {}, output: null, plans: null, gen: 0 };
+const S = { deck: null, file: null, pages: {}, reviewed: [], batch: 0, page: 0, view: 'upload', settings: { mode: 'auto', sz: 20, src: true }, pageMode: {}, caps: {}, output: null, plans: null, gen: 0, apiKey: '', usage: { input: 0, output: 0, searches: 0 } };
 const B = 5;
 const nBatches = () => Math.ceil(S.deck.slides.length / B);
 const batchPages = b => { const out = []; for (let i = b*B; i < Math.min(S.deck.slides.length, b*B + B); i++) out.push(i); return out; };
@@ -1160,7 +1184,7 @@ const pg = i => S.pages[i] || (S.pages[i] = { status: 'idle', items: [], visual:
 function storeKey(){ return S.file ? `ppt-helper:${S.file.name}:${S.file.size}:${S.deck.slides.length}` : null; }
 function save(){
   try { const k = storeKey(); if (!k) return;
-    const pages = {}; for (const [i, p] of Object.entries(S.pages)) pages[i] = { status: p.status === 'done' ? 'done' : 'idle', items: p.items, visual: p.visual, imgs: p.imgs };
+    const pages = {}; for (const [i, p] of Object.entries(S.pages)) pages[i] = { status: p.status === 'done' ? 'done' : 'idle', items: p.items, visual: p.visual, imgs: p.imgs, sawImgs: p.sawImgs, searched: p.searched };
     localStorage.setItem(k, JSON.stringify({ pages, reviewed: S.reviewed, batch: S.batch, page: S.page, settings: S.settings, pageMode: S.pageMode })); } catch {}
 }
 function restore(){
@@ -1170,25 +1194,154 @@ function restore(){
 }
 function invalidateOutput(){ S.output = null; S.plans = null; }
 
-/* ---------- 환경 점검 ---------- */
-async function checkCaps(){
-  const ul = $('#caps');
+/* ---------- 환경 점검·Claude 연결 ---------- */
+const IN_ARTIFACT = !!(window.claude && window.claude.use);
+const HAS_SDK = typeof window.Anthropic === 'function';
+const MODEL = 'claude-opus-5-5';
+function engine(){ if (HAS_SDK && S.apiKey && S.caps.api === true) return 'api'; if (S.sample) return 'artifact'; return null; }
+function capRows(){
+  const ul = $('#caps'); const api = engine() === 'api';
   const row = (st, title, sub) => h('li', null, h('span', { class: 'st ' + st }, { ok: '✓', no: '✕', part: '△', wait: '…' }[st]), h('div', null, title, sub ? h('small', null, sub) : null));
-  const draw = () => { ul.replaceChildren(
-    row('ok', 'PPTX 읽기·원본 미리보기', '브라우저 안에서 파일을 풀어 슬라이드 순서·글자·그림·표를 읽고 그립니다. 차트·SmartArt는 자리만 표시하고 내용은 글자로 읽습니다.'),
-    row(S.caps.sample == null ? 'wait' : S.caps.sample ? 'ok' : 'no', 'Claude 해설 생성', S.caps.sample == null ? '확인 중' : S.caps.sample ? '처음 쓸 때 사용 허락 창이 뜹니다. 사용량은 보는 사람의 Claude 계정에서 나갑니다.' : '이 화면에서는 Claude에 연결할 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.'),
-    row(S.caps.images == null ? 'wait' : S.caps.images ? 'ok' : 'part', '그림 분석', S.caps.images == null ? '확인 중' : S.caps.images ? '슬라이드 속 그림을 Claude에 보내 함께 분석합니다.' : '이 계정의 Artifact에서는 이미지를 Claude에 보낼 수 없습니다. 글자·표·차트 데이터·그림 설명문만으로 분석하고, 그림이 있는 페이지는 따로 표시합니다.'),
-    row('no', '실제 웹 검색', 'Artifact 안의 Claude는 인터넷을 검색할 수 없습니다. 그래서 모든 설명에 "AI 해설"이라고 표시하고, 출처·URL은 만들지 않습니다.'),
+  const claudeRow = api ? row('ok', 'Claude 해설 생성', `API 키로 ${MODEL}에 직접 연결했습니다. 사용료는 이 API 키의 계정에서 나갑니다.`)
+    : row(S.caps.sample == null ? 'wait' : S.caps.sample ? 'ok' : 'no', 'Claude 해설 생성', S.caps.sample == null ? (IN_ARTIFACT ? '확인 중' : '아래에 API 키를 넣고 연결 확인을 눌러 주세요.') : S.caps.sample ? 'claude.ai 계정으로 연결됩니다. 처음 쓸 때 사용 허락 창이 뜹니다.' : '아직 연결되지 않았습니다. 아래에 API 키를 넣어 주세요.');
+  ul.replaceChildren(
+    row('ok', 'PPTX 읽기·원본 미리보기', '브라우저 안에서 파일을 풀어 슬라이드 순서·글자·그림·표를 읽고 그립니다. 차트·SmartArt는 자리만 표시하고 내용은 데이터·글자로 읽습니다.'),
+    claudeRow,
+    api ? row('ok', '그림 분석', '슬라이드 속 그림(PNG·JPG·GIF·BMP·SVG)을 Claude에 보내 함께 읽습니다. EMF·WMF 그림은 브라우저가 열 수 없어 제외하고 따로 표시합니다.')
+      : HAS_SDK ? row('wait', '그림 분석', 'API 키로 연결하면 슬라이드 속 그림을 Claude가 함께 읽습니다.')
+      : row(S.caps.images ? 'ok' : 'no', '그림 분석', S.caps.images ? '슬라이드 속 그림을 Claude에 보내 함께 분석합니다.' : 'claude.ai 안에서는 그림을 Claude에 보낼 수 없습니다. 전체 기능판(API 키)에서 됩니다.'),
+    api ? row('ok', '실제 웹 검색', 'Claude가 페이지마다 웹을 검색해 확인합니다. 출처는 검색 결과로 실제 받은 URL만 남기고, 검색에 없던 URL은 버립니다.')
+      : HAS_SDK ? row('wait', '실제 웹 검색', 'API 키로 연결하면 페이지마다 실제 웹 검색으로 내용을 확인하고 출처를 붙입니다.')
+      : row('no', '실제 웹 검색', 'claude.ai 안에서는 웹을 검색할 수 없습니다. 전체 기능판(API 키)에서 됩니다. 그 전까지 설명에는 "웹 검색 확인 안 됨"이 붙습니다.'),
     row('ok', '기존 PPTX 수정·결과 렌더링', '원본 XML을 직접 고쳐 글자 상자를 편집 가능한 상태로 유지합니다. 결과 파일을 다시 읽어 미리보기를 그립니다.'),
-    row(S.caps.downloads == null ? 'wait' : S.caps.downloads ? 'ok' : 'no', '파일 다운로드', S.caps.downloads == null ? '확인 중' : S.caps.downloads ? '저장 확인 창을 거쳐 .pptx로 내려받습니다.' : '이 화면에서는 파일 저장을 쓸 수 없습니다.')
-  ); };
-  draw();
-  const sample = await useCap('sample'); S.sample = sample; S.caps.sample = !!sample;
-  let lim = null; if (sample && sample.limits) lim = await sample.limits().catch(() => null);
-  S.caps.images = !!(lim && lim.images); S.imgLimits = lim && lim.images;
-  draw();
-  const dl = await useCap('downloads'); S.dl = dl; S.caps.downloads = !!dl;
-  draw();
+    IN_ARTIFACT ? row(S.caps.downloads == null ? 'wait' : S.caps.downloads ? 'ok' : 'no', '파일 다운로드', S.caps.downloads == null ? '확인 중' : S.caps.downloads ? '저장 확인 창을 거쳐 .pptx로 내려받습니다.' : '이 화면에서는 파일 저장을 쓸 수 없습니다.')
+      : row('ok', '파일 다운로드', '브라우저 다운로드로 .pptx를 저장합니다.')
+  );
+}
+function renderConn(){
+  const box = $('#conn'); if (!box) return;
+  if (!HAS_SDK){
+    box.replaceChildren(
+      h('h2', null, '그림 분석과 웹 검색을 쓰려면'),
+      h('p', null, 'claude.ai 안에서는 보안 정책 때문에 그림을 Claude에 보내거나 웹을 검색할 수 없습니다. 같은 앱의 전체 기능판을 내 컴퓨터에서 열고 Claude API 키를 넣으면 두 기능이 모두 켜집니다.'),
+      h('ol', { class: 'flow' },
+        h('li', null, '아래 버튼으로 전체 기능판 HTML 파일을 내려받습니다.'),
+        h('li', null, 'Chrome이나 Edge로 그 파일을 엽니다(더블클릭).'),
+        h('li', null, h('a', { href: 'https://console.anthropic.com/settings/keys', target: '_blank', rel: 'noopener' }, 'console.anthropic.com'), '에서 API 키를 만들어 붙여 넣습니다. API 사용료는 claude.ai 구독과 따로 청구됩니다.')),
+      h('div', { class: 'tools' }, h('button', { class: 'btn primary', type: 'button', id: 'getfull', onclick: downloadFull }, '전체 기능판 HTML 내려받기')));
+    return;
+  }
+  const key = h('input', { type: 'password', id: 'apikey', placeholder: 'sk-ant-로 시작하는 API 키', autocomplete: 'off', style: { flex: '1', minWidth: '0', padding: '7px 10px', border: '1px solid var(--line)', borderRadius: '6px', background: 'var(--panel)' } });
+  key.value = S.apiKey;
+  const remember = h('input', { type: 'checkbox', id: 'remember' });
+  try { remember.checked = !!localStorage.getItem('ppt-helper:key'); } catch {}
+  const st = h('p', { class: 'progress', id: 'connmsg', style: { margin: 0 } },
+    S.caps.api === true ? `연결됨 · ${MODEL} · 그림 분석·웹 검색 사용` : S.caps.api === false ? S.connErr || '연결하지 못했습니다.' : '키를 넣고 연결 확인을 눌러 주세요.');
+  const go = async () => {
+    S.apiKey = key.value.trim(); S.caps.api = null; st.textContent = '확인 중…';
+    try { sessionStorage.setItem('ppt-helper:key', S.apiKey); if (remember.checked) localStorage.setItem('ppt-helper:key', S.apiKey); else localStorage.removeItem('ppt-helper:key'); } catch {}
+    try { await apiClient().models.retrieve(MODEL); S.caps.api = true; S.connErr = ''; }
+    catch (e){ S.caps.api = false; S.connErr = apiErrText(e); }
+    renderConn(); capRows();
+    if (S.caps.api && S.deck){ analyzeBatch(S.batch); }
+  };
+  box.replaceChildren(
+    h('h2', null, 'Claude 연결 (API 키)'),
+    h('p', { style: { margin: '0 0 10px' } }, '그림 분석과 실제 웹 검색은 Claude API로 직접 연결해서 씁니다. ', h('a', { href: 'https://console.anthropic.com/settings/keys', target: '_blank', rel: 'noopener' }, 'console.anthropic.com'), '에서 만든 키를 넣어 주세요. 키는 이 컴퓨터의 브라우저에만 저장되고 Anthropic API 말고는 어디에도 보내지 않습니다.'),
+    h('div', { class: 'tools', style: { flexWrap: 'nowrap' } }, key, h('button', { class: 'btn primary', type: 'button', onclick: go }, '연결 확인')),
+    h('label', { style: { fontSize: '13px', display: 'flex', gap: '6px', alignItems: 'center', margin: '8px 0' } }, remember, '이 컴퓨터에 키 기억하기(공용 컴퓨터에서는 끄세요)'),
+    st);
+}
+function apiClient(){ return new window.Anthropic({ apiKey: S.apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 }); }
+function apiErrText(e){
+  const A = window.Anthropic;
+  if (A && e instanceof A.AuthenticationError) return 'API 키가 맞지 않습니다. 키를 다시 복사해 넣어 주세요.';
+  if (A && e instanceof A.PermissionDeniedError) return '이 키로는 이 모델을 쓸 수 없습니다. 콘솔에서 키 권한을 확인해 주세요.';
+  if (A && e instanceof A.RateLimitError) return '요청이 많아 잠시 막혔습니다. 1분쯤 뒤 다시 생성을 눌러 주세요.';
+  if (A && e instanceof A.BadRequestError) return '요청이 거절되었습니다: ' + (e.message || '');
+  if (A && e instanceof A.APIConnectionError) return '인터넷 연결을 확인해 주세요.';
+  if (A && e instanceof A.APIError) return `API 오류(${e.status || ''}): ${e.message || ''}`;
+  return (e && e.message) || String(e);
+}
+async function downloadFull(){
+  try {
+    const r = await fetch('ppt-helper-full.html'); if (!r.ok) throw new Error('파일을 찾지 못했습니다');
+    const blob = await r.blob();
+    if (S.dl) await S.dl.save({ filename: '강의PPT해설도우미.html', data: blob });
+    else { const a = h('a', { href: URL.createObjectURL(blob), download: '강의PPT해설도우미.html' }); document.body.append(a); a.click(); a.remove(); }
+  } catch (e){ toast(e && e.code === 'declined' ? '저장을 취소했습니다.' : '내려받지 못했습니다: ' + (e && e.message || e)); }
+}
+async function checkCaps(){
+  try { S.apiKey = sessionStorage.getItem('ppt-helper:key') || localStorage.getItem('ppt-helper:key') || ''; } catch {}
+  capRows(); renderConn();
+  if (HAS_SDK && S.apiKey){ try { await apiClient().models.retrieve(MODEL); S.caps.api = true; } catch (e){ S.caps.api = false; S.connErr = apiErrText(e); } renderConn(); capRows(); }
+  if (IN_ARTIFACT){
+    const sample = await useCap('sample'); S.sample = sample; S.caps.sample = !!sample;
+    let lim = null; if (sample && sample.limits) lim = await sample.limits().catch(() => null);
+    S.caps.images = !!(lim && lim.images); S.imgLimits = lim && lim.images;
+    capRows();
+    const dl = await useCap('downloads'); S.dl = dl; S.caps.downloads = !!dl;
+    capRows();
+  } else { S.caps.sample = false; capRows(); }
+}
+
+/* ---------- 그림 준비·API 호출 ---------- */
+async function imageToB64(blob){ // 큰 그림은 줄이고 JPEG로 바꿔 보냄
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => rej(new Error('그림을 열 수 없음')); im.src = url; });
+    const w0 = img.naturalWidth || 800, h0 = img.naturalHeight || 600;
+    if (w0 < 40 && h0 < 40) return null; // 글머리 기호 같은 작은 장식
+    const sc = Math.min(1, 1568 / Math.max(w0, h0));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w0*sc)); c.height = Math.max(1, Math.round(h0*sc));
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+    const data = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return { media_type: 'image/jpeg', data };
+  } catch { return null; } finally { URL.revokeObjectURL(url); }
+}
+function extractJson(text){
+  const fences = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/g)].map(m => m[1]);
+  const cands = [...fences.reverse(), text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)];
+  for (const c of cands){ try { const v = JSON.parse(c.trim()); if (v && typeof v === 'object') return v; } catch {} }
+  throw { code: 'invalid_json', message: '응답에서 결과(JSON)를 찾지 못했습니다. 다시 생성을 눌러 주세요.' };
+}
+let useFallback = true;
+async function apiAnalyze(prompt, images){
+  const client = apiClient();
+  const content = [...images.map(im => ({ type: 'image', source: { type: 'base64', media_type: im.media_type, data: im.data } })), { type: 'text', text: prompt }];
+  const messages = [{ role: 'user', content }];
+  const tools = [{ type: 'web_search_20260209', name: 'web_search', max_uses: 4 }];
+  const all = []; let msg = null;
+  for (let round = 0; round < 4; round++){
+    const params = { model: MODEL, max_tokens: 16000, thinking: { type: 'adaptive' }, output_config: { effort: 'medium' }, tools, messages };
+    if (useFallback){ params.betas = ['server-side-fallback-2026-07-01']; params.fallbacks = 'default'; }
+    try { msg = await client.beta.messages.stream(params).finalMessage(); }
+    catch (e){
+      if (useFallback && e instanceof window.Anthropic.BadRequestError && /fallback/i.test(e.message || '')){ useFallback = false; round--; continue; }
+      throw e;
+    }
+    const u = msg.usage || {};
+    S.usage.input += (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
+    S.usage.output += u.output_tokens || 0;
+    S.usage.searches += (u.server_tool_use && u.server_tool_use.web_search_requests) || 0;
+    all.push(...msg.content);
+    if (msg.stop_reason === 'pause_turn'){ messages.push({ role: 'assistant', content: msg.content }); continue; }
+    break;
+  }
+  if (msg.stop_reason === 'refusal') throw { code: 'refusal', message: 'Claude가 이 페이지 분석을 거절했습니다. 다시 생성해 보세요.' };
+  const seen = new Map();
+  for (const b of all){
+    if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) for (const r of b.content) if (r.type === 'web_search_result' && r.url) seen.set(normUrl(r.url), { url: r.url, title: r.title || hostOf(r.url) });
+    if (b.type === 'text' && Array.isArray(b.citations)) for (const c of b.citations) if (c.url && !seen.has(normUrl(c.url))) seen.set(normUrl(c.url), { url: c.url, title: c.title || hostOf(c.url) });
+  }
+  const text = all.filter(b => b.type === 'text').map(b => b.text).join('');
+  const searched = all.filter(b => b.type === 'server_tool_use' && b.name === 'web_search').map(b => b.input && b.input.query).filter(Boolean);
+  return { json: extractJson(text), seen, searched };
+}
+function usageText(){
+  const u = S.usage; if (!u.input && !u.output) return '';
+  const usd = u.input/1e6*4 + u.output/1e6*20 + u.searches*0.01;
+  return `API 사용 입력 ${Math.round(u.input/1000)}k · 출력 ${Math.round(u.output/1000)}k 토큰 · 웹 검색 ${u.searches}회 (약 $${usd.toFixed(2)})`;
 }
 
 /* ---------- 업로드 ---------- */
@@ -1224,16 +1377,31 @@ async function analyzePage(i, regen){
   const p = pg(i); p.status = 'loading'; p.err = ''; renderReview();
   try {
     await enqueue(async () => {
-      if (!S.sample) throw { code: 'no_sample', message: 'Claude에 연결할 수 없습니다.' };
+      const eng = engine();
+      if (!eng) throw { code: 'no_engine', message: HAS_SDK ? '"1 파일 올리기" 화면에서 API 키를 넣고 연결 확인을 누르면 분석을 시작합니다.' : 'Claude에 연결할 수 없습니다. claude.ai에 로그인한 상태로 열어 주세요.' };
       const ctx = await pageContext(S.deck, i);
       const keep = regen ? p.items.filter(x => x.sel || x.edited) : [];
+      if (eng === 'api'){
+        const imgs = [];
+        for (const m of ctx.media.slice(0, 8)){ const b = await imageToB64(m.blob); if (b) imgs.push(b); }
+        const out = await apiAnalyze(buildPrompt(S.deck, i, ctx, { fileName: S.file.name, keep, withImages: imgs.length, web: true }), imgs);
+        S.gen++;
+        const fresh = normItems(out.json, S.gen, out.seen);
+        const keepTitles = new Set(keep.map(k => (k.title || '').toLowerCase()));
+        p.items = regen ? [...keep, ...fresh.filter(f => !keepTitles.has(f.title.toLowerCase()))] : fresh;
+        p.items = TYPE_ORDER.flatMap(t => p.items.filter(x => x.type === t));
+        p.visual = String(out.json.visual || '').replace(URL_RE, '').trim();
+        p.imgs = ctx.pics.length; p.sawImgs = imgs.length; p.unread = ctx.unread; p.searched = out.searched;
+        p.status = 'done';
+        return;
+      }
       let images = null;
       if (S.caps.images && ctx.media.length){ const max = Math.min(S.imgLimits.maxCount || 1, 4); images = ctx.media.filter(m => m.blob.size <= (S.imgLimits.maxInputBytes || 5e6)).slice(0, max).map(m => m.blob); if (!images.length) images = null; }
-      const opts = { fileName: S.file.name, keep, withImages: !!images };
+      const opts = { fileName: S.file.name, keep, withImages: images ? images.length : 0 };
       let res;
       try { res = await S.sample.json(buildPrompt(S.deck, i, ctx, opts), { images: images || undefined, cache: regen ? false : undefined }); }
       catch (e){
-        if (images && e && (e.code === 'images_unavailable' || e.code === 'image_rejected')){ S.caps.images = false; images = null; opts.withImages = false;
+        if (images && e && (e.code === 'images_unavailable' || e.code === 'image_rejected')){ S.caps.images = false; images = null; opts.withImages = 0;
           res = await S.sample.json(buildPrompt(S.deck, i, ctx, opts), { cache: regen ? false : undefined }); }
         else throw e;
       }
@@ -1251,7 +1419,7 @@ async function analyzePage(i, regen){
   } catch (e){
     p.status = 'error';
     const code = e && e.code;
-    p.err = code === 'not_granted' ? 'Claude 사용을 허락하지 않아 해설을 만들 수 없습니다. 다시 생성을 누르면 다시 묻습니다.'
+    p.err = (window.Anthropic && e instanceof window.Anthropic.APIError) ? apiErrText(e) : code === 'not_granted' ? 'Claude 사용을 허락하지 않아 해설을 만들 수 없습니다. 다시 생성을 누르면 다시 묻습니다.'
       : code === 'rate_limited' ? '요청이 많아 잠시 막혔습니다. 조금 뒤 다시 생성을 눌러 주세요.'
       : code === 'invalid_json' ? '응답 형식이 맞지 않았습니다. 다시 생성을 눌러 주세요.'
       : (e && e.message) || '해설을 만들지 못했습니다.';
@@ -1284,7 +1452,7 @@ function renderReview(){
   if (!ps.includes(S.page)) S.page = ps[0];
   const ready = ps.filter(i => pg(i).status === 'done').length;
   $('#progress').replaceChildren('원본 ', h('b', { class: 'num' }, `${S.page+1} / ${n}`), '페이지 · 묶음 ', h('b', { class: 'num' }, `${S.batch+1}/${nb}`),
-    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개');
+    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개', usageText() ? ' · ' + usageText() : '');
   const last = S.batch === nb - 1;
   const nx = $('#next');
   nx.textContent = last ? `${ps[0]+1}–${ps[ps.length-1]+1}페이지 검토 완료 → 반영 단계로` : `${ps[0]+1}–${ps[ps.length-1]+1}페이지 검토 완료 → ${batchPages(S.batch+1)[0]+1}–${batchPages(S.batch+1).slice(-1)[0]+1}페이지 분석`;
@@ -1321,10 +1489,11 @@ function itemEl(i, it){
   cb.onchange = () => { it.sel = cb.checked; box.classList.toggle('sel', it.sel); invalidateOutput(); save(); refreshCounts(); };
   const body = h('div', { style: { minWidth: 0 } });
   const view = () => {
-    body.replaceChildren(
+    body.replaceChildren(...[
       it.title ? h('div', { class: 'it-title' }, it.title) : null,
       h('div', { class: 'it-text' }, it.text),
-      h('div', { class: 'it-flags' }, h('span', { class: 'flag' }, 'AI 해설 · 웹 검색 확인 안 됨'), it.edited ? h('span', { class: 'flag edit' }, '직접 수정함') : null, it.uncertain ? h('span', { class: 'flag unc' }, 'AI가 확실하지 않다고 표시') : null));
+      it.sources && it.sources.length ? h('ul', { class: 'srcs' }, it.sources.map(sv => h('li', null, h('a', { href: sv.url, target: '_blank', rel: 'noopener' }, sv.title || hostOf(sv.url)), ' ', h('span', { class: 'host' }, hostOf(sv.url))))) : null,
+      h('div', { class: 'it-flags' }, (it.sources && it.sources.length ? h('span', { class: 'flag web' }, `AI 해설 · 웹 출처 ${it.sources.length}개`) : h('span', { class: 'flag' }, it.web ? 'AI 해설 · 검색 출처 없음' : 'AI 해설 · 웹 검색 확인 안 됨')), it.edited ? h('span', { class: 'flag edit' }, '직접 수정함') : null, it.uncertain ? h('span', { class: 'flag unc' }, 'AI가 확실하지 않다고 표시') : null)].filter(Boolean));
   };
   const edit = () => {
     const ti = h('input', { type: 'text', id: 'ti-' + it.id, value: it.title, 'aria-label': '항목 이름' });
@@ -1346,7 +1515,7 @@ function refreshCounts(){
   const ps = batchPages(S.batch); const n = S.deck.slides.length, nb = nBatches();
   const ready = ps.filter(i => pg(i).status === 'done').length;
   $('#progress').replaceChildren('원본 ', h('b', { class: 'num' }, `${S.page+1} / ${n}`), '페이지 · 묶음 ', h('b', { class: 'num' }, `${S.batch+1}/${nb}`),
-    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개');
+    ` (해설 ${ready}/${ps.length}) · 검토 완료 `, h('b', { class: 'num' }, `${S.reviewed.length}/${nb}`), '묶음 · 선택 ', h('b', { class: 'num' }, String(selCount())), '개', usageText() ? ' · ' + usageText() : '');
   const lbls = document.querySelectorAll('#thumbs .thumb');
   ps.forEach((i, k) => { const p = pg(i); const nsel = p.items.filter(x => x.sel).length; const l = lbls[k] && lbls[k].querySelector('.lbl span:last-child'); if (l && p.status === 'done') l.textContent = nsel ? `${nsel}개 선택` : '검토 전'; });
 }
@@ -1360,6 +1529,8 @@ function renderPanel(){
   const parts = [head, tools];
   const m = getModel(S.deck, i);
   const nPics = m.shapes.filter(s => s.src === 'slide' && s.kind === 'pic').length;
+  if (p.status === 'done' && p.sawImgs) parts.push(h('div', { class: 'note' }, `그림 ${p.sawImgs}개를 Claude가 함께 읽었습니다.${p.unread ? ` EMF·WMF 등 브라우저가 열 수 없는 그림 ${p.unread}개는 제외했습니다.` : ''}`));
+  if (p.status === 'done' && p.searched && p.searched.length) parts.push(h('div', { class: 'note' }, h('b', null, '웹 검색어: '), p.searched.join(' · ')));
   if (nPics && p.status === 'done' && !p.sawImgs) parts.push(h('div', { class: 'note warn' }, `이 페이지에는 그림 ${nPics}개가 있지만 이 환경에서는 그림을 Claude에 보낼 수 없어 글자 정보만으로 설명했습니다. 그림 속 내용은 직접 확인해 주세요.`));
   if (p.visual) parts.push(h('div', { class: 'note' }, h('b', null, '시각 자료: '), p.visual));
   if (p.status === 'loading') parts.push(h('div', { class: 'loading' }, h('span', { class: 'spin' }), p.items.length ? '다시 생성하는 중입니다. 선택·수정한 항목은 그대로 남습니다.' : '이 페이지의 보충 설명을 만드는 중입니다…'));
@@ -1379,7 +1550,7 @@ function computePlans(){
   const plans = {};
   for (let i = 0; i < S.deck.slides.length; i++){
     const items = selectedFor(i); if (!items.length) continue;
-    plans[i] = planPage(S.deck, i, items, { mode: S.pageMode[i] || S.settings.mode, sz: S.settings.sz });
+    plans[i] = planPage(S.deck, i, items, { mode: S.pageMode[i] || S.settings.mode, sz: S.settings.sz, src: S.settings.src });
   }
   return plans;
 }
@@ -1397,7 +1568,7 @@ function placeText(plan){
 }
 function renderOutput(){
   $('#mode-auto').checked = S.settings.mode === 'auto'; $('#mode-supp').checked = S.settings.mode === 'supp';
-  $('#boxsz').value = String(S.settings.sz);
+  $('#boxsz').value = String(S.settings.sz); $('#srcon').checked = S.settings.src !== false;
   const tbl = $('#plan'); const sel = []; for (let i = 0; i < S.deck.slides.length; i++) if (selectedFor(i).length) sel.push(i);
   const total = sel.reduce((n, i) => n + selectedFor(i).length, 0);
   $('#plansum').textContent = sel.length ? `선택한 설명 ${total}개를 원본 ${sel.length}개 페이지에 넣습니다. 원본 문구는 지우거나 바꾸지 않습니다.` : '아직 선택한 설명이 없습니다. 2단계에서 필요한 항목에 체크해 주세요.';
@@ -1415,7 +1586,7 @@ function renderOutput(){
       mode.onchange = () => { if (mode.value) S.pageMode[i] = mode.value; else delete S.pageMode[i]; invalidateOutput(); save(); renderOutput(); };
       tb.append(h('tr', null,
         h('td', null, h('div', { class: 'num', style: { fontWeight: 600 } }, `p.${i+1}`), h('div', { style: { fontSize: '13px', color: 'var(--muted)', maxWidth: '200px' } }, plan.title)),
-        h('td', null, h('ul', null, selectedFor(i).map(it => h('li', null, it.title ? h('b', null, it.title + ': ') : null, it.text)))),
+        h('td', null, h('ul', null, selectedFor(i).map(it => h('li', null, it.title ? h('b', null, it.title + ': ') : null, it.text, it.sources && it.sources.length ? h('span', { style: { color: 'var(--teal)', fontSize: '12px' } }, ` (웹 출처 ${it.sources.length})`) : null)))),
         h('td', null, placeText(plan)),
         h('td', null, mode)));
     }
@@ -1464,9 +1635,15 @@ async function download(){
   if (S.dl){
     try { await S.dl.save({ filename: name, data: S.output.blob }); toast(`${name} 저장을 요청했습니다.`); }
     catch (e){ const c = e && e.code; toast(c === 'declined' ? '저장을 취소했습니다.' : c === 'rate_limited' ? '이미 저장 창이 열려 있습니다. 잠시 뒤 다시 눌러 주세요.' : '이 화면에서는 저장할 수 없습니다: ' + (e && e.message || c)); }
+  } else if (window.showSaveFilePicker){ // Chrome·Edge: 저장 위치와 이름을 고르는 창
+    try {
+      const fh = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'PowerPoint 프레젠테이션', accept: { 'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'] } }] });
+      const w = await fh.createWritable(); await w.write(S.output.blob); await w.close();
+      toast(`${fh.name}로 저장했습니다.`);
+    } catch (e){ toast(e && e.name === 'AbortError' ? '저장을 취소했습니다.' : '저장하지 못했습니다: ' + (e && e.message || e)); }
   } else {
-    const a = h('a', { href: URL.createObjectURL(S.output.blob), download: name }); document.body.append(a); a.click(); a.remove();
-    toast('브라우저 다운로드를 시작했습니다. 아무 일도 없으면 claude.ai에서 이 페이지를 열어 주세요.');
+    const a = h('a', { href: URL.createObjectURL(S.output.blob), download: name }); document.body.append(a); a.click(); setTimeout(() => a.remove(), 1000);
+    toast('다운로드를 시작했습니다. 파일 이름이 이상하면 끝에 .pptx를 붙여 주세요.');
   }
 }
 
@@ -1480,6 +1657,7 @@ $('#st-upload').onclick = () => { S.view = 'upload'; renderAll(); };
 $('#st-review').onclick = () => { if (S.deck){ S.view = 'review'; renderAll(); } };
 $('#st-output').onclick = () => { if (S.deck){ S.view = 'output'; renderAll(); } };
 for (const id of ['mode-auto', 'mode-supp']) $('#' + id).addEventListener('change', e => { S.settings.mode = e.target.value; invalidateOutput(); save(); renderOutput(); });
+$('#srcon').addEventListener('change', e => { S.settings.src = e.target.checked; invalidateOutput(); save(); renderOutput(); });
 $('#boxsz').addEventListener('change', e => { S.settings.sz = +e.target.value; invalidateOutput(); save(); renderOutput(); });
 $('#build').onclick = build; $('#download').onclick = download;
 let rsT; new ResizeObserver(() => { clearTimeout(rsT); rsT = setTimeout(() => { if (S.view === 'review' && S.deck) renderStage(); }, 150); }).observe($('#stage'));

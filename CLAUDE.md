@@ -34,5 +34,9 @@ Artifact: https://claude.ai/artifact/QJpphUREYC1HmAsJHmQFNq (capabilities: `samp
 - 모두 브라우저 안에서 동작: JSZip으로 PPTX XML을 직접 읽고 고친다(서버 없음). 원본 파일은 건드리지 않고 새 Blob을 만든다.
 - 미리보기는 자체 렌더러(도형 위치·글자·그림·표). 차트·SmartArt는 자리만 그리고 내용은 글자로 읽어 프롬프트에 넣는다.
 - 배치: 본문 상자를 실제 글자 높이로 줄여 빈 공간을 격자로 찾고, 부족하면 20pt 이상 본문만 최저 20pt까지 줄여 본다. 그래도 안 되면 항목 단위로 보충 슬라이드(Title Only 레이아웃 우선)로 넘긴다.
-- 한계: Artifact 안 Claude는 웹 검색 불가, 이 계정은 이미지 전송 불가(`images_unavailable`). 그래서 설명은 모두 "AI 해설"로 표시하고 출처·URL을 만들지 않는다.
+- 두 가지 실행 방식:
+  - claude.ai Artifact(`index.html`): `sample`로 해설 생성. 이 계정은 이미지 전송 불가(`images_unavailable`), 웹 검색도 불가라서 "웹 검색 확인 안 됨"으로 표시한다.
+  - 전체 기능판(`ppt-helper-full.html`): 사용자가 내려받아 로컬에서 열고 Anthropic API 키를 넣는다. 브라우저에서 SDK로 `claude-opus-5-5`를 직접 호출하고(`dangerouslyAllowBrowser`), 슬라이드 그림을 JPEG로 보내며 `web_search_20260209` 도구를 쓴다. 출처는 응답 안 검색 결과에 실제로 있던 URL만 남긴다.
+- `ppt-helper-full.html`은 빌드 결과물이다. `index.html`을 고친 뒤 `python3 ppt-helper/build.py`로 다시 만들고, Artifact에 게시할 때 `files`에 `ppt-helper-full.html`로 함께 올린다(Artifact의 "전체 기능판 내려받기" 버튼이 이 파일을 가져온다).
+- `vendor/`에는 JSZip 3.10.1과 `@anthropic-ai/sdk` 0.131.0을 esbuild로 묶은 브라우저 번들(`window.Anthropic`)이 들어 있다.
 - 상태(선택·수정)는 파일 이름+크기별로 localStorage에 저장한다.
