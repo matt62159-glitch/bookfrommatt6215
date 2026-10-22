@@ -64,6 +64,19 @@ OUTLETS = {
                  ("p", "class", "editor-p")],
         "prioritize": True,
     },
+    "hankyung": {
+        "name": "한국경제",
+        "hosts": ["hankyung.com"],
+        # 피드 주소와 본문 위치는 사이트에 접속할 수 없어 아직 실제로 확인하지 못했다.
+        "feeds": [
+            ("https://www.hankyung.com/feed/economy", "경제"),
+            ("https://www.hankyung.com/feed/it", "기술"),
+            ("https://www.hankyung.com/feed/all-news", None),
+        ],
+        "discover": None,
+        "body": [("div", "id", "articletxt"), ("div", "class", "article-body")],
+        "prioritize": True,
+    },
     "aitimes": {
         "name": "AI타임스",
         "hosts": ["aitimes.com"],
@@ -451,7 +464,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--hours", type=float, default=24, help="최근 몇 시간 안에 발행된 기사 (기본 24)")
     ap.add_argument("--per-outlet", type=int, default=5, help="매체별 최대 기사 수 (기본 5)")
-    ap.add_argument("--outlets", default="donga,hankook,aitimes")
+    ap.add_argument("--outlets", default="donga,hankook,hankyung,aitimes")
     ap.add_argument("--urls", help="직접 넣은 기사 URL 목록 파일(한 줄에 하나). 주면 RSS 수집은 건너뛴다")
     ap.add_argument("--out", default="out")
     a = ap.parse_args(argv)

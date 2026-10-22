@@ -259,9 +259,10 @@ ol.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 8px; }
 const OUTLETS = {
   donga:   { name: "동아일보", hosts: ["donga.com"], prioritize: true },
   hankook: { name: "한국일보", hosts: ["hankookilbo.com"], prioritize: true },
+  hankyung: { name: "한국경제", hosts: ["hankyung.com"], prioritize: true },
   aitimes: { name: "AI타임스", hosts: ["aitimes.com"], prioritize: false },
 };
-const OUTLET_ORDER = ["donga", "hankook", "aitimes", "other"];
+const OUTLET_ORDER = ["donga", "hankook", "hankyung", "aitimes", "other"];
 const CATS = ["경제", "기술", "기타"];
 const SUGGEST = ["더 쉽게 설명해줘", "구체적인 예를 들어줘", "왜 이런 결과가 나오는 거야?", "이 주장에 반대하는 근거는?", "기사에서 확인된 사실과 전망을 나눠줘"];
 const BODY_FOR_AI = 14000;
@@ -413,10 +414,10 @@ const isTE = (a) => a.category === "경제" || a.category === "기술";
 function visibleGroups() {
   const now = Date.now(), win = S.settings.hours * 3600e3, f = S.filters;
   const list = allArticles().filter((a) => {
-    if (!a.demo && a.source !== "manual") {
+    if (!a.demo && a.source !== "manual" && a.publishedAt) {
       const t = a.publishedAt ? new Date(a.publishedAt).getTime() : NaN;
       if (!(t >= now - win)) return false;
-    }
+    } else if (!a.demo && a.source === "search" && !(new Date(a.collectedAt).getTime() >= now - win)) return false;
     const n = getNote(a.id);
     if (f.outlet !== "all" && a.outlet !== f.outlet) return false;
     if (f.cat !== "all" && a.category !== f.cat) return false;
@@ -479,7 +480,7 @@ function statusBlock() {
   if (S.demo) return "";
   const st = S.status;
   if (!st) return `<div class="status"><div class="s-row"><span class="dot"></span><span>수집 기록이 아직 없습니다. 수집기가 처음 실행되면 매체별 성공·실패가 여기에 표시됩니다.</span></div></div>`;
-  const rows = ["donga", "hankook", "aitimes"].map((k) => {
+  const rows = [...new Set(["donga", "hankook", "aitimes", ...Object.keys(st.outlets || {})])].filter((k) => OUTLETS[k]).map((k) => {
     const o = st.outlets?.[k];
     if (!o) return `<div class="s-row"><span class="dot"></span><span>${OUTLETS[k].name}: 확인 안 함</span></div>`;
     return `<div class="s-row"><span class="dot ${o.ok ? "ok" : "fail"}"></span><span><b>${OUTLETS[k].name}</b> ${o.ok ? `수집 성공 ${o.count}건` : "수집 실패"}${o.error ? `<br><span class="${o.ok ? "note" : "err"}">${esc(o.error)}</span>` : ""}</span></div>`;
@@ -535,7 +536,7 @@ function bodyTag(a) {
 function cardHtml(a, rel) {
   const n = getNote(a.id);
   return `<button type="button" class="card ${S.selected === a.id ? "sel" : ""} ${n.read ? "read" : ""}" data-act="open" data-id="${esc(a.id)}">
-    <div class="tags">${a.demo ? '<span class="tag demo">데모</span>' : ""}<span>${esc(a.outletName)}</span>${catTag(a.category)}${bodyTag(a)}${a.source === "manual" ? '<span class="tag">직접 추가</span>' : ""}${n.read ? '<span class="tag">읽음</span>' : ""}${n.bookmarked ? '<span class="tag rel">북마크</span>' : ""}${rel.length ? `<span class="tag rel">관련 보도 ${rel.length}</span>` : ""}</div>
+    <div class="tags">${a.demo ? '<span class="tag demo">데모</span>' : ""}<span>${esc(a.outletName)}</span>${catTag(a.category)}${bodyTag(a)}${a.source === "manual" ? '<span class="tag">직접 추가</span>' : a.source === "search" ? '<span class="tag">검색으로 찾음</span>' : ""}${n.read ? '<span class="tag">읽음</span>' : ""}${n.bookmarked ? '<span class="tag rel">북마크</span>' : ""}${rel.length ? `<span class="tag rel">관련 보도 ${rel.length}</span>` : ""}</div>
     <div class="t">${esc(a.title || "(제목 없음)")}</div>
     <div class="times"><span>발행 <span class="mono">${esc(a.publishedAt ? kst(a.publishedAt) : "확인 안 됨")}</span></span><span>수집 <span class="mono">${esc(kst(a.collectedAt))}</span></span></div>
   </button>`;
@@ -552,7 +553,7 @@ function renderArticle() {
   let h = `<div class="wrap"><div class="a-head">
     <div class="tags">${a.demo ? '<span class="tag demo">데모 · 실제 기사 아님</span>' : ""}<span>${esc(a.outletName)}</span>${catTag(a.category)}${a.section && a.section !== a.category ? `<span class="tag">${esc(a.section)}</span>` : ""}${bodyTag(a)}</div>
     <h2>${esc(a.title || "(제목 없음)")}</h2>
-    <dl class="a-meta"><dt>발행</dt><dd class="mono">${esc(a.publishedAt ? kst(a.publishedAt) : "확인 안 됨")}</dd><dt>수집</dt><dd class="mono">${esc(kst(a.collectedAt))} ${a.source === "manual" ? "(직접 추가)" : ""}</dd>
+    <dl class="a-meta"><dt>발행</dt><dd class="mono">${esc(a.publishedAt ? kst(a.publishedAt) : "확인 안 됨")}</dd><dt>수집</dt><dd class="mono">${esc(kst(a.collectedAt))} ${a.source === "manual" ? "(직접 추가)" : a.source === "search" ? "(웹 검색으로 목록만 확인)" : ""}</dd>
     ${a.url ? `<dt>원문</dt><dd><a href="${esc(a.url)}" target="_blank" rel="noopener">원문 기사 열기 ↗</a></dd>` : ""}</dl></div>
     <div class="actions">
       <button class="btn small" type="button" data-act="read" aria-pressed="${!!n.read}">${n.read ? "읽음 ✓" : "읽음 표시"}</button>
