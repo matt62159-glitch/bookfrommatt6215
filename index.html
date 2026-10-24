@@ -51,7 +51,7 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-cont
 .mode-pill.local { color: var(--warn); border-color: currentColor; }
 
 nav.tabs { display: flex; gap: 4px; background: var(--sunken); padding: 4px; border-radius: 12px; margin-bottom: 20px; }
-nav.tabs button { flex: 1; border: 0; background: transparent; padding: 10px 8px; border-radius: 9px; font-weight: 500; color: var(--muted); cursor: pointer; }
+nav.tabs button { flex: 1; white-space: nowrap; border: 0; background: transparent; padding: 10px 8px; border-radius: 9px; font-weight: 500; color: var(--muted); cursor: pointer; }
 nav.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
 nav.tabs .count { font-size: .8rem; color: var(--muted); margin-left: 4px; font-variant-numeric: tabular-nums; }
 
@@ -131,6 +131,10 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: .8; }
 .quote blockquote mark { background: var(--mark-soft); color: inherit; border-radius: 2px; }
 .quote .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .quote .meta .date { font-size: .78rem; color: var(--muted); margin-right: auto; font-variant-numeric: tabular-nums; }
+.quote.nopg { grid-template-columns: minmax(0, 1fr); }
+.kind-seg { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.kind-seg button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-weight: 500; color: var(--muted); }
+.kind-seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .empty { text-align: center; padding: 34px 16px; color: var(--muted); }
 .empty .big { font-family: var(--font-quote); font-size: 1.15rem; color: var(--ink); margin-bottom: 6px; }
 
@@ -154,26 +158,34 @@ details.info li { margin-bottom: 4px; }
 
   <nav class="tabs" role="tablist">
     <button role="tab" id="tabAdd" aria-selected="true">구절 추가</button>
-    <button role="tab" id="tabLib" aria-selected="false">내 서재<span class="count" id="libCount"></span></button>
+    <button role="tab" id="tab-book" aria-selected="false">책<span class="count" id="count-book"></span></button>
+    <button role="tab" id="tab-comic" aria-selected="false">만화<span class="count" id="count-comic"></span></button>
+    <button role="tab" id="tab-article" aria-selected="false">기사<span class="count" id="count-article"></span></button>
   </nav>
 
   <!-- 구절 추가 -->
   <section id="viewAdd" class="stack">
     <div class="panel">
-      <div class="step-label">1 · 책 정보</div>
-      <div class="row">
-        <label class="field">책 제목
+      <div class="kind-seg" role="group" aria-label="종류">
+        <button type="button" data-kind="book" aria-pressed="true">책</button>
+        <button type="button" data-kind="comic" aria-pressed="false">만화</button>
+        <button type="button" data-kind="article" aria-pressed="false">기사</button>
+      </div>
+      <div class="step-label" id="infoLabel">1 · 책 정보</div>
+      <div class="row" id="infoRow">
+        <label class="field" id="titleField"><span id="titleLabel">책 제목</span>
           <input type="text" id="bookTitle" list="bookList" placeholder="예: 소년이 온다" autocomplete="off">
         </label>
-        <label class="field">저자
+        <label class="field" id="authorField">저자
           <input type="text" id="bookAuthor" placeholder="예: 한강" autocomplete="off">
         </label>
       </div>
+      <p class="hint" id="articleHint" hidden style="margin:0">기사는 본문만 저장합니다. 아래 ‘직접 입력’에 인상적인 문단을 붙여넣으세요.</p>
       <datalist id="bookList"></datalist>
     </div>
 
     <div class="panel" id="uploadPanel">
-      <div class="step-label">2 · 표시한 쪽 사진</div>
+      <div class="step-label" id="uploadLabel">2 · 표시한 쪽 사진</div>
       <label class="drop" id="drop" for="fileInput">
         <strong>사진 선택 또는 촬영</strong>
         <small>밑줄·형광펜·[ ] 표시가 있는 쪽을 한 장 올려주세요</small>
@@ -181,11 +193,12 @@ details.info li { margin-bottom: 4px; }
       <input type="file" id="fileInput" accept="image/*" hidden>
       <p class="hint" style="margin:10px 0 0">글자가 또렷하게 보이도록 한 쪽(또는 펼친 두 쪽)을 가깝게, 그림자 없이 찍으면 판독이 정확해집니다. 페이지 번호가 사진에 들어가게 찍어주세요.</p>
       <div class="notice" id="sampleOff" hidden style="margin-top:12px"></div>
+      <div class="actions" style="margin-top:12px"><button class="btn" id="manualOnly">사진 없이 직접 입력</button></div>
     </div>
 
     <div id="reviewArea" hidden>
       <div class="review">
-        <div class="photo-box panel">
+        <div class="photo-box panel" id="photoBox">
           <div class="step-label">원본 사진 (확인용, 저장되지 않음)</div>
           <img id="photo" alt="업로드한 책 사진">
           <div class="photo-meta"><span id="photoName"></span><button class="btn ghost small" id="changePhoto">다른 사진</button></div>
@@ -265,6 +278,7 @@ details.info li { margin-bottom: 4px; }
     sample: null, imgLimits: null,
     file: null, imgURL: null, drafts: [], ctl: null,
     book: null, query: "", sort: "page-asc", editing: null,
+    kind: "book", addKind: "book",
   };
 
   /* ---------- 저장소 ---------- */
@@ -319,7 +333,7 @@ details.info li { margin-bottom: 4px; }
       t.append(el("ul", {},
         el("li", {}, "구절은 이 앱(Artifact)의 개인 저장 공간에 저장됩니다. 내 계정 전용 영역이라 앱을 공유받은 다른 사람은 물론 앱 소유자도 읽을 수 없습니다."),
         el("li", {}, "앱을 닫았다 열어도, 다른 기기에서 같은 claude.ai 계정으로 열어도 기록이 그대로 보입니다."),
-        el("li", {}, "저장되는 것: 책 제목, 저자, 구절, 페이지, 확인 필요 표시, 저장 시각. 원본 사진은 저장하지 않습니다."),
+        el("li", {}, "저장되는 것: 종류(책·만화·기사), 제목, 저자(책만), 구절, 페이지, 확인 필요 표시, 저장 시각. 원본 사진은 저장하지 않습니다."),
         el("li", {}, "제한: 앱 하나당 문서 25,000개(구절 1개 = 문서 1개), 구절 1개당 약 256KB. 로그인하지 않은 상태에서는 기록을 볼 수 없습니다."),
         el("li", {}, "이 앱(Artifact)을 삭제하면 저장된 기록도 함께 지워집니다. 중요한 기록은 CSV로 주기적으로 내려받아 두세요.")
       ));
@@ -398,12 +412,13 @@ details.info li { margin-bottom: 4px; }
     return { images: [full, a, b], split };
   }
 
-  function buildPrompt(title, author, split) {
+  function buildPrompt(title, author, split, kind) {
     const imgs = split
       ? `Image 1 is the whole photo. Images 2 and 3 are zoomed crops of the ${split} of the SAME photo (they overlap in the middle). Use the crops only to read small print more accurately; never list one passage twice because it appears in more than one image.`
       : `The image is the whole photo.`;
-    return `You are reading a photo of a printed book page taken by a reader. ${imgs}
-Book (context only, never use it to fill in text): "${title || "unknown"}"${author ? " by " + author : ""}.
+    const what = kind === "comic" ? "a printed comic (manga) page; marked text may be in speech bubbles or captions" : kind === "article" ? "a printed or on-screen news article" : "a printed book page";
+    return `You are reading a photo of ${what} taken by a reader. ${imgs}
+Source (context only, never use it to fill in text): "${title || "unknown"}"${author ? " by " + author : ""}.
 
 TASK: Find the passages the reader marked by hand — underlines (pen, pencil, or highlighter lines under text), highlighter coloring, or hand-drawn brackets or corner marks such as [ ], 「 」, ⌐ ¬, ( ) marking a range. Treat everything inside a hand-drawn bracket or corner mark as underlined; if only the opening mark is drawn, the range runs from it to the end of that sentence. IGNORE circles or stars drawn around or next to single words and other margin symbols: they are not passages and do not set a range.
 
@@ -452,7 +467,7 @@ Reply with ONLY this JSON, no other text:
     try {
       const { images, split } = await prepareImages(S.file);
       setStatus("loading", "Claude가 표시한 구절을 찾는 중… (보통 20초~1분)");
-      const res = await S.sample.json(buildPrompt($("#bookTitle").value.trim(), $("#bookAuthor").value.trim(), split), {
+      const res = await S.sample.json(buildPrompt($("#bookTitle").value.trim(), S.addKind === "book" ? $("#bookAuthor").value.trim() : "", split, S.addKind), {
         images, signal: S.ctl.signal, cache: false,
         onText: ({ text }) => setStatus("loading", `결과를 받는 중… ${text.length.toLocaleString()}자`),
       });
@@ -507,6 +522,8 @@ Reply with ONLY this JSON, no other text:
     $("#photoName").textContent = file.name || "사진";
     $("#uploadPanel").hidden = true;
     $("#reviewArea").hidden = false;
+    $("#photoBox").hidden = false;
+    $("#analyzeBtn").hidden = !S.sample;
     $("#analyzeBtn").textContent = "사진 분석하기";
     $("#imageNote").hidden = true;
     setStatus(null);
@@ -531,6 +548,14 @@ Reply with ONLY this JSON, no other text:
     const all = document.querySelectorAll("#drafts textarea");
     all[all.length - 1]?.focus();
   });
+  $("#manualOnly").addEventListener("click", () => openManual());
+  function openManual() {
+    $("#uploadPanel").hidden = true;
+    $("#reviewArea").hidden = false;
+    $("#photoBox").hidden = true;
+    $("#analyzeBtn").hidden = true;
+    if (!S.drafts.length) $("#addManual").click();
+  }
   $("#photo").addEventListener("click", () => { $("#viewerImg").src = S.imgURL; $("#viewer").hidden = false; });
   $("#viewer").addEventListener("click", () => { $("#viewer").hidden = true; });
 
@@ -543,9 +568,9 @@ Reply with ONLY this JSON, no other text:
       const ta = el("textarea", { id: "draft-text-" + d.key, rows: "4", placeholder: "구절을 입력하세요" });
       ta.value = d.text;
       ta.addEventListener("input", () => { d.text = ta.value; updateSaveHint(); });
-      const pg = el("input", { type: "text", id: "draft-page-" + d.key, class: "page-input" + (d.page ? "" : " missing"), inputmode: "numeric", placeholder: "직접 입력" });
+      const pg = el("input", { type: "text", id: "draft-page-" + d.key, class: "page-input" + (d.page || d.manual ? "" : " missing"), inputmode: "numeric", placeholder: "직접 입력" });
       pg.value = d.page;
-      pg.addEventListener("input", () => { d.page = pg.value; pg.classList.toggle("missing", !pg.value.trim()); });
+      pg.addEventListener("input", () => { d.page = pg.value; pg.classList.toggle("missing", !d.manual && !pg.value.trim()); });
       const inc = el("input", { type: "checkbox", id: "draft-inc-" + d.key });
       inc.checked = d.include;
       inc.addEventListener("change", () => { d.include = inc.checked; card.classList.toggle("off", !d.include); updateSaveHint(); });
@@ -561,8 +586,8 @@ Reply with ONLY this JSON, no other text:
         ),
         d.reviewNote ? el("div", { class: "notice" }, d.reviewNote) : null,
         ta,
-        el("div", { class: "draft-foot" },
-          el("label", { class: "field" }, d.page ? "페이지" : "페이지 (사진에서 못 읽음)", pg),
+        el("div", { class: "draft-foot", style: S.addKind === "article" ? "grid-template-columns:1fr" : "" },
+          S.addKind === "article" ? null : el("label", { class: "field" }, d.page ? "페이지" : (d.manual ? "페이지 (선택)" : "페이지 (사진에서 못 읽음)"), pg),
           el("div", { class: "actions", style: "justify-content:space-between" },
             el("label", { class: "check" }, flag, "확인 필요 표시 유지"),
             el("button", { class: "btn ghost small", onclick: () => { S.drafts = S.drafts.filter((x) => x !== d); renderDrafts(); } }, "삭제"))
@@ -583,9 +608,10 @@ Reply with ONLY this JSON, no other text:
   const pageNum = (p) => { const m = String(p || "").match(/\d+/); return m ? parseInt(m[0], 10) : null; };
 
   $("#saveBtn").addEventListener("click", async () => {
-    const title = $("#bookTitle").value.trim();
-    const author = $("#bookAuthor").value.trim();
-    if (!title) { toast("책 제목을 입력해주세요."); $("#bookTitle").focus(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    const kind = S.addKind;
+    const title = kind === "article" ? "" : $("#bookTitle").value.trim();
+    const author = kind === "book" ? $("#bookAuthor").value.trim() : "";
+    if (kind === "book" && !title) { toast("책 제목을 입력해주세요."); $("#bookTitle").focus(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     const list = S.drafts.filter((d) => d.include && d.text.trim());
     if (!list.length || !S.store) return;
     const btn = $("#saveBtn");
@@ -594,10 +620,11 @@ Reply with ONLY this JSON, no other text:
     try {
       for (const d of list) {
         const now = new Date().toISOString();
-        await S.store.add({ title, author, text: d.text.trim(), page: d.page.trim(), pageNum: pageNum(d.page), flagged: !!d.flag, createdAt: now, updatedAt: now });
+        const page = kind === "article" ? "" : d.page.trim();
+        await S.store.add({ kind, title, author, text: d.text.trim(), page, pageNum: pageNum(page), flagged: !!d.flag, createdAt: now, updatedAt: now });
         saved++;
       }
-      toast(`${saved}개 구절을 저장했습니다.`);
+      toast(`${KIND[kind].name}에 ${saved}개 구절을 저장했습니다.`);
       S.drafts = []; S.file = null;
       if (S.imgURL) URL.revokeObjectURL(S.imgURL);
       S.imgURL = null;
@@ -616,13 +643,19 @@ Reply with ONLY this JSON, no other text:
   });
 
   /* ---------- 내 서재 ---------- */
+  const KIND = {
+    book: { name: "책", group: "모든 책", unit: "권", untitled: "(제목 없음)", search: "구절, 책 제목, 저자 검색" },
+    comic: { name: "만화", group: "모든 만화", unit: "편", untitled: "(작품명 없음)", search: "대사, 작품명 검색" },
+    article: { name: "기사", group: "", unit: "", untitled: "", search: "기사 문장 검색" },
+  };
+  const kindOf = (q) => (KIND[q.kind] ? q.kind : "book");
   const bookKey = (q) => (q.title || "") + "\u0000" + (q.author || "");
 
   function booksOf(quotes) {
     const m = new Map();
     for (const q of quotes) {
       const k = bookKey(q);
-      if (!m.has(k)) m.set(k, { key: k, title: q.title || "(제목 없음)", author: q.author || "", items: [], last: "" });
+      if (!m.has(k)) m.set(k, { key: k, title: q.title || KIND[kindOf(q)].untitled || "(제목 없음)", author: q.author || "", items: [], last: "" });
       const b = m.get(k);
       b.items.push(q);
       if ((q.createdAt || "") > b.last) b.last = q.createdAt || "";
@@ -632,7 +665,7 @@ Reply with ONLY this JSON, no other text:
 
   function sortItems(items) {
     const arr = items.slice();
-    if (S.sort === "recent") return arr.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    if (S.sort === "recent" || S.kind === "article") return arr.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
     const dir = S.sort === "page-desc" ? -1 : 1;
     return arr.sort((a, b) => {
       const pa = a.pageNum ?? null, pb = b.pageNum ?? null;
@@ -658,34 +691,42 @@ Reply with ONLY this JSON, no other text:
 
   function visibleQuotes() {
     const q = S.query.trim().toLowerCase();
-    return S.quotes.filter((x) =>
+    return S.quotes.filter((x) => kindOf(x) === S.kind &&
       (!S.book || bookKey(x) === S.book) &&
       (!q || (x.text || "").toLowerCase().includes(q) || (x.title || "").toLowerCase().includes(q) || (x.author || "").toLowerCase().includes(q)));
   }
 
   function renderLibrary() {
-    const books = booksOf(S.quotes);
+    const K = KIND[S.kind];
+    const mine = S.quotes.filter((q) => kindOf(q) === S.kind);
+    for (const k of Object.keys(KIND)) {
+      const n = S.quotes.filter((q) => kindOf(q) === k).length;
+      $("#count-" + k).textContent = n || "";
+    }
+    const books = booksOf(mine);
     if (S.book && !books.some((b) => b.key === S.book)) S.book = null;
-    $("#libCount").textContent = S.quotes.length ? S.quotes.length : "";
 
     const dl = $("#bookList");
-    dl.replaceChildren(...books.map((b) => el("option", { value: b.title }, b.author)));
+    dl.replaceChildren(...booksOf(S.quotes.filter((q) => kindOf(q) === S.addKind && q.title)).map((b) => el("option", { value: b.title }, b.author)));
 
+    $("#search").placeholder = K.search;
+    $("#sort").hidden = S.kind === "article";
     const bx = $("#books");
-    bx.hidden = books.length === 0;
+    bx.hidden = books.length === 0 || S.kind === "article";
     bx.replaceChildren(
       el("button", { class: "book-btn", "aria-pressed": String(!S.book), onclick: () => { S.book = null; renderLibrary(); } },
-        el("b", {}, "모든 책"), el("small", {}, `${books.length}권 · ${S.quotes.length}개`)),
+        el("b", {}, K.group), el("small", {}, `${books.length}${K.unit} · ${mine.length}개`)),
       ...books.map((b) => el("button", { class: "book-btn", "aria-pressed": String(S.book === b.key), title: b.title, onclick: () => { S.book = b.key; renderLibrary(); } },
         el("b", {}, b.title), el("small", {}, (b.author ? b.author + " · " : "") + b.items.length + "개")))
     );
 
     const list = $("#libList");
-    if (!S.quotes.length) {
+    if (!mine.length) {
+      const how = { book: "‘구절 추가’에서 밑줄 친 쪽을 찍어 올리면 책별로 여기에 모입니다.", comic: "‘구절 추가’에서 ‘만화’를 고르고 인상적인 대사를 입력하면 작품별로 여기에 모입니다.", article: "‘구절 추가’에서 ‘기사’를 고르고 인상적인 문단을 붙여넣으면 여기에 모입니다." }[S.kind];
       list.replaceChildren(el("div", { class: "empty" },
-        el("div", { class: "big" }, "아직 모은 구절이 없습니다"),
-        el("p", { style: "margin:0 0 14px" }, "‘구절 추가’에서 밑줄 친 쪽을 찍어 올리면 책별로 여기에 모입니다."),
-        el("button", { class: "btn primary", onclick: () => showTab("add") }, "첫 구절 추가하기")));
+        el("div", { class: "big" }, `아직 모은 ${K.name} 구절이 없습니다`),
+        el("p", { style: "margin:0 0 14px" }, how),
+        el("button", { class: "btn primary", onclick: () => { setAddKind(S.kind); showTab("add"); } }, "첫 구절 추가하기")));
       $("#csvBtn").disabled = true;
       return;
     }
@@ -694,10 +735,11 @@ Reply with ONLY this JSON, no other text:
     $("#csvHint").textContent = vis.length ? `지금 보이는 ${vis.length}개 구절` : "";
     if (!vis.length) { list.replaceChildren(el("div", { class: "empty" }, "검색 결과가 없습니다.")); return; }
 
+    if (S.kind === "article") { list.replaceChildren(...sortItems(vis).map(renderQuote)); return; }
     const groups = booksOf(vis);
     list.replaceChildren(...groups.map((g, gi) => el("div", { class: "book-group", style: gi ? "margin-top:22px" : "" },
       el("h3", {}, g.title),
-      el("div", { class: "by" }, (g.author || "저자 미입력") + ` · ${g.items.length}개`),
+      el("div", { class: "by" }, (S.kind === "book" ? (g.author || "저자 미입력") + " · " : "") + `${g.items.length}개`),
       ...sortItems(g.items).map(renderQuote)
     )));
   }
@@ -715,8 +757,10 @@ Reply with ONLY this JSON, no other text:
       clearTimeout(armed);
       try { await S.store.remove(q.id); toast("삭제했습니다."); } catch { toast("삭제하지 못했습니다."); }
     });
-    return el("div", { class: "quote" },
-      el("div", { class: "pg" + (q.page ? "" : " none") }, q.page ? "p. " + q.page : "쪽 없음"),
+    const k = kindOf(q);
+    const showPg = k === "book" || (k === "comic" && q.page);
+    return el("div", { class: "quote" + (showPg ? "" : " nopg") },
+      showPg ? el("div", { class: "pg" + (q.page ? "" : " none") }, q.page ? "p. " + q.page : "쪽 없음") : null,
       el("div", {},
         el("blockquote", {}, ...highlight(q.text || "", S.query.trim())),
         el("div", { class: "meta" },
@@ -736,12 +780,13 @@ Reply with ONLY this JSON, no other text:
       if (!ta.value.trim()) { toast("구절을 비워둘 수 없습니다."); return; }
       save.disabled = true;
       try {
-        await S.store.update(q.id, { text: ta.value.trim(), page: pg.value.trim(), pageNum: pageNum(pg.value), flagged: fl.checked, updatedAt: new Date().toISOString() });
+        await S.store.update(q.id, { text: ta.value.trim(), page: noPg ? "" : pg.value.trim(), pageNum: noPg ? null : pageNum(pg.value), flagged: fl.checked, updatedAt: new Date().toISOString() });
         S.editing = null; renderLibrary(); toast("수정했습니다.");
       } catch { save.disabled = false; toast("수정하지 못했습니다."); }
     });
-    return el("div", { class: "quote" },
-      el("div", { class: "pg" }, pg),
+    const noPg = kindOf(q) === "article";
+    return el("div", { class: "quote" + (noPg ? " nopg" : "") },
+      noPg ? null : el("div", { class: "pg" }, pg),
       el("div", { class: "stack", style: "gap:8px" }, ta,
         el("div", { class: "actions" },
           el("label", { class: "check", style: "margin-right:auto" }, fl, "확인 필요"),
@@ -758,16 +803,16 @@ Reply with ONLY this JSON, no other text:
   /* ---------- CSV ---------- */
   function toCSV(rows) {
     const esc = (v) => { const s = String(v ?? ""); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const head = ["책 제목", "저자", "페이지", "구절", "확인 필요", "저장일"];
+    const head = ["종류", "제목", "저자", "페이지", "구절", "확인 필요", "저장일"];
     const body = [];
     for (const g of booksOf(rows)) for (const q of sortItems(g.items))
-      body.push([q.title, q.author, q.page, q.text, q.flagged ? "예" : "", fmtDate(q.createdAt)]);
+      body.push([KIND[kindOf(q)].name, q.title, q.author, q.page, q.text, q.flagged ? "예" : "", fmtDate(q.createdAt)]);
     return "﻿" + [head, ...body].map((r) => r.map(esc).join(",")).join("\r\n");
   }
   $("#csvBtn").addEventListener("click", async () => {
     const csv = toCSV(visibleQuotes());
     const d = new Date();
-    const filename = `책구절_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.csv`;
+    const filename = `${KIND[S.kind].name}구절_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.csv`;
     let dl = null;
     try { if (window.claude?.use) dl = await claude.use("downloads"); } catch {}
     if (dl) {
@@ -788,14 +833,33 @@ Reply with ONLY this JSON, no other text:
 
   /* ---------- 탭·공통 ---------- */
   function showTab(name) {
+    if (name === "lib") name = "book";
     const add = name === "add";
     $("#tabAdd").setAttribute("aria-selected", String(add));
-    $("#tabLib").setAttribute("aria-selected", String(!add));
+    for (const k of Object.keys(KIND)) $("#tab-" + k).setAttribute("aria-selected", String(name === k));
     $("#viewAdd").hidden = !add; $("#viewLib").hidden = add;
+    if (!add && S.kind !== name) { S.kind = name; S.book = null; S.editing = null; $("#csvBox").hidden = true; renderLibrary(); }
     try { localStorage.setItem("bookquotes.tab", name); } catch {}
   }
   $("#tabAdd").addEventListener("click", () => showTab("add"));
-  $("#tabLib").addEventListener("click", () => showTab("lib"));
+  for (const k of Object.keys(KIND)) $("#tab-" + k).addEventListener("click", () => showTab(k));
+
+  function setAddKind(kind) {
+    S.addKind = kind;
+    document.querySelectorAll(".kind-seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.kind === kind)));
+    const article = kind === "article";
+    $("#infoLabel").textContent = { book: "1 · 책 정보", comic: "1 · 만화 정보", article: "1 · 기사" }[kind];
+    $("#infoRow").hidden = article;
+    $("#articleHint").hidden = !article;
+    $("#authorField").hidden = kind !== "book";
+    $("#titleLabel").textContent = kind === "comic" ? "작품명 (선택)" : "책 제목";
+    $("#bookTitle").placeholder = kind === "comic" ? "예: 슬램덩크 24권" : "예: 소년이 온다";
+    $("#uploadLabel").textContent = article ? "2 · 기사 사진 (선택)" : kind === "comic" ? "2 · 표시한 장면 사진" : "2 · 표시한 쪽 사진";
+    try { localStorage.setItem("bookquotes.addKind", kind); } catch {}
+    renderLibrary();
+    renderDrafts();
+  }
+  document.querySelectorAll(".kind-seg button").forEach((b) => b.addEventListener("click", () => setAddKind(b.dataset.kind)));
 
   let toastT;
   function toast(msg) {
@@ -805,7 +869,7 @@ Reply with ONLY this JSON, no other text:
 
   $("#bookTitle").addEventListener("change", () => {
     const t = $("#bookTitle").value.trim();
-    const hit = S.quotes.find((q) => q.title === t && q.author);
+    const hit = S.addKind === "book" && S.quotes.find((q) => kindOf(q) === "book" && q.title === t && q.author);
     if (hit && !$("#bookAuthor").value.trim()) $("#bookAuthor").value = hit.author;
   });
 
@@ -813,7 +877,8 @@ Reply with ONLY this JSON, no other text:
 
   try {
     const s = localStorage.getItem("bookquotes.sort"); if (s) { S.sort = s; $("#sort").value = s; }
-    if (localStorage.getItem("bookquotes.tab") === "lib") showTab("lib");
+    const ak = localStorage.getItem("bookquotes.addKind"); if (KIND[ak]) setAddKind(ak);
+    const tab = localStorage.getItem("bookquotes.tab"); if (tab && tab !== "add") showTab(KIND[tab] ? tab : "book");
   } catch {}
   renderAll();
   initStore();

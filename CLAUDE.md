@@ -10,9 +10,10 @@
 
 - 저장 위치: `ArtifactData`, url은 위 Artifact, collection `data/users/me` (사용자 본인 전용 영역)
 - 문서 하나 = 구절 하나. 필드:
-  `title`, `author`, `text`, `page`(문자열), `pageNum`(숫자 또는 null), `flagged`(확인 필요 여부), `createdAt`, `updatedAt`(ISO 시각)
+  `kind`(`book` 책 · `comic` 만화 · `article` 기사, 없으면 책), `title`, `author`, `text`, `page`(문자열), `pageNum`(숫자 또는 null), `flagged`(확인 필요 여부), `createdAt`, `updatedAt`(ISO 시각)
+- 만화는 `author`를 비우고 `title`(작품명)은 사용자가 주면 넣는다. 기사는 본문만 저장한다(`title`·`author`·`page` 비움, `pageNum: null`).
 - 여러 장이면 모두 읽은 뒤 `batch` 한 번(최대 50건)으로 저장한다.
-- 책 제목·저자를 사용자가 주지 않았으면 묻는다. 사진에 인쇄된 근거로 추정했다면 그렇다고 밝힌다.
+- 책은 제목·저자를 사용자가 주지 않았으면 묻는다. 사진에 인쇄된 근거로 추정했다면 그렇다고 밝힌다.
 - 저장 후 페이지별로 무엇을 저장했는지, 확인 필요 항목과 그 이유를 짧게 보고한다.
 
 ## 추출 규칙 (사용자 지정)
